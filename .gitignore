@@ -1,0 +1,4 @@
+__pycache__/
+*.py[cod]
+images/*-preview.png
+verification_report.txt
