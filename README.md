@@ -3,7 +3,7 @@
 ![Seven computed views of primes and Goldbach's conjecture](images/landscape.png)
 
 > Computational visualizations exploring primes, residue structure, sieving,
-> and Goldbach's conjecture, with independent verification of the plotted data.
+> and Goldbach's conjecture, with independent cross-checks of the plotted data.
 
 `generate_visualizations.py` draws seven panels from settings at the top of the
 file. Every plotted point, count and number-bearing label is computed at run
@@ -49,27 +49,40 @@ time. The worked example is N = 100.
 
 7. **Surviving pairs after sieving.** For each even N from 4 to 1000, the
    candidate pairs are a + (N − a) with a ≤ N/2. Each heatmap row sieves by one
-   more prime from `SIEVE_ZS` (2 to 23) and counts the pairs where neither a nor
-   N − a is divisible by any prime sieved so far. These survivors are not
+   more prime from `SIEVE_PRIMES` (2 to 23) and counts the pairs where neither
+   a nor N − a is divisible by any prime sieved so far. These survivors are not
    necessarily primes. The bottom row is the actual Goldbach count. Divisibility
    of N by small primes produces visible vertical structure in the heatmap.
 
-## Verification
+## Code layout
 
-The script runs its checks before saving each layout and stops if any fails.
-It also writes `verification_report.txt` with the results.
+- `generate_visualizations.py`: settings and image generation.
+- `goldbach/number_theory.py`: primes, Goldbach pairs, residue arithmetic,
+  Gaussian and Eisenstein primes, and sieving.
+- `goldbach/visualization_data.py`: computes the data used by the seven
+  visualizations.
+- `goldbach/render.py`: draws that data using the styles and layouts defined
+  alongside it in `goldbach/style.py` and `goldbach/layout.py`.
+- `tests/`: mathematical tests, independent cross-checks, and figure tests.
 
-Per layout, the checks are:
+## Tests
 
-- consistency checks made while drawing, such as labels agreeing with the data;
-- a colour audit and a text-contrast audit of the drawn figure;
-- `verify()`, which recomputes the plotted data without the program's numpy
-  sieve or drawing helpers. It uses trial-division primality, brute-force
-  Gaussian and Eisenstein irreducibility, and brute-force sieving, then compares
-  the results with values read back from the plotted artists and figure text.
+```
+pip install -r requirements-dev.txt
+python -m pytest
+```
 
-These checks confirm that the computations and plotted values in this program
-are consistent. They are not a proof of Goldbach's conjecture.
+The tests cover the number theory and the data behind each panel, using known
+values and properties. Key results are also cross-checked against simpler
+brute-force implementations in `tests/brute_force.py` (trial-division
+primality, brute-force Gaussian and Eisenstein irreducibility, brute-force
+sieving), which share no code with the program. Figure tests build both layouts
+and read the drawn bars, points, cells, arrays and labels back from the figure.
+They check that these match the computed data, that only palette colours are
+used, and that text meets a minimum contrast.
+
+The tests check that the program computes and draws what it claims to. They
+are not a proof of Goldbach's conjecture.
 
 ## Running
 
@@ -90,9 +103,8 @@ Requires Python 3.8 or later. Tested with Python 3.12.10, matplotlib 3.9.3 and n
 - `images/landscape.png`: 3600 × 2400
 - `images/linkedin-4x5.png`: 2160 × 2700
 
-Running the script also writes `verification_report.txt` and smaller preview
-images (`images/*-preview.png`). These are generated outputs and are ignored
-by Git.
+Running the script also writes smaller preview images
+(`images/*-preview.png`). These are generated outputs and are ignored by Git.
 
 ## License
 
