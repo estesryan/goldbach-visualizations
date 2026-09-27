@@ -1,4 +1,4 @@
-"""Draws the seven panels from the prepared visualization data.
+"""Draws the seven panels, and the separate parity figure, from the prepared data.
 
 The data decides what is shown; this module decides how. Nothing here
 computes the mathematics a panel represents.
@@ -11,7 +11,7 @@ import numpy as np
 from matplotlib.colors import LogNorm, to_hex, to_rgba
 from matplotlib.patches import Circle, Rectangle
 
-from .layout import FIGURE_SIZES, LAYOUTS, PanelCanvas
+from .layout import FIGURE_SIZES, LAYOUTS, PARITY_FIGURE_SIZES, PARITY_LAYOUTS, PanelCanvas
 from .style import BRAND_CMAP, C, FONT_HEAD, FS, contrast
 
 
@@ -379,4 +379,101 @@ def build_figure(name, data):
     draw_involution(cv, data.involution, axes)
     draw_sum_of_squares(cv, data.sum_of_squares, axes)
     draw_sieve(cv, data.sieve, axes)
+    return fig, axes
+
+
+# ---- beyond the poster: the parity figure
+
+def card(fig, rect, title, sub):
+    """Panel background and heading, as panel() draws them, without a panel number."""
+    x, y, w, h = rect
+    W, H = fig.get_size_inches()
+    fig.patches.append(Rectangle((x / W, y / H), w / W, h / H, transform=fig.transFigure,
+                                 fc=C("PANEL_BG"), ec=C("BORDER"), lw=0.8, zorder=-10))
+    top = (y + h) / H
+    fig.text((x + 0.162) / W, top - 0.24 / H, title, fontsize=FS["head"], family=FONT_HEAD, va="center")
+    fig.text((x + 0.162) / W, top - 0.516 / H, sub, fontsize=FS["sub"], va="top", color=C("MUTED"))
+
+
+def card_axes(fig, rect):
+    """Axes inside a card, below its heading, with room for tick and axis labels."""
+    x, y, w, h = rect
+    W, H = fig.get_size_inches()
+    ax = fig.add_axes([(x + 0.85) / W, (y + 0.62) / H, (w - 1.2) / W, (h - 1.62) / H])
+    style_axes(ax, grid=True)
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+    ax.set_xscale("log")
+    ax.set_xlim(2, 1900)
+    ax.set_xticks([2, 10, 100, 1000]); ax.set_xticklabels(["2", "10", "100", "1000"])
+    ax.set_xlabel("sieve level z (largest prime sieved out)", labelpad=4)
+    return ax
+
+
+def build_parity_figure(name, d):
+    """Draw the parity figure for layout `name` from ParityData. Returns (fig, axes).
+
+    axes: "average" (S/M for each N) and "sums" (M and S for the featured N).
+    Lines carry their role as gid ("surviving" for M, "pair" for S and S/M) and
+    their N as label.
+    """
+    W, H = PARITY_FIGURE_SIZES[name]
+    cards = PARITY_LAYOUTS[name]
+    fig = plt.figure(figsize=(W, H))
+    fig.text(0.216 / W, 1 - 0.30 / H, "What the sieve can’t see", fontsize=FS["title"],
+             family=FONT_HEAD, va="center")
+    fig.text(1 - 0.216 / W, 1 - 0.30 / H, "Beyond the poster · every value below is calculated, not drawn",
+             fontsize=FS["small"], color=C("MUTED"), ha="right", va="center")
+    fig.text(0.216 / W, 1 - 0.62 / H,
+             "A pair (a, N − a) with 2 ≤ a ≤ N/2 survives the sieve at level z if neither a nor N − a has "
+             "a prime factor ≤ z. Liouville’s $\\lambda(n) = (-1)^{\\Omega(n)}$, where $\\Omega(n)$ counts prime factors\n"
+             "with multiplicity, is −1 on primes and +1 on products of two primes. Classical sieve information "
+             "has difficulty distinguishing integers by the parity of Ω(n), which is exactly what λ records.",
+             fontsize=FS["body"], color=C("MUTED"), va="top", linespacing=1.5)
+    axes = {}
+
+    # The average sign S/M for each N. Same colour, different dashes: the curves nearly coincide.
+    card(fig, cards["average"], "Average of λ(a)·λ(N − a) over surviving pairs",
+         "S(z) / M(z) for three nearby N. The three curves nearly coincide.")
+    axl = card_axes(fig, cards["average"]); axes["average"] = axl
+    for (N, sw), ls in zip(d.sweeps.items(), ["-", (0, (5, 3)), (0, (1, 2.5))]):
+        axl.plot(sw.zs, sw.average, color=C("pair"), lw=1.6, ls=ls, label=f"N = {N:,}", gid="pair")
+    axl.set_ylim(-0.05, 1.08)
+    axl.set_yticks([0, 0.25, 0.5, 0.75, 1])
+    axl.legend(loc="upper left", frameon=False, handlelength=2.6)
+
+    # M and S for the featured N.
+    N0 = d.featured
+    sw = d.sweeps[N0]
+    zs, M, S = sw.zs, sw.M, sw.S
+    card(fig, cards["sums"], f"N = {N0:,}",
+         "The sieve-visible count M(z) and the parity-sensitive sum S(z), against the same sieve levels.")
+    axr = card_axes(fig, cards["sums"]); axes["sums"] = axr
+    axr.plot(zs, M, color=C("surviving"), lw=2.2, label="M", gid="surviving")
+    axr.plot(zs, S, color=C("pair"), lw=2.2, label="S", gid="pair")
+    axr.set_yscale("symlog", linthresh=100)
+    axr.set_ylim(-1000, M.max() * 1.6)
+    axr.set_ylabel("pairs (symlog scale)")
+    axr.text(3, M[1] * 1.35, "sieve-visible survivor count  M(z)", fontsize=FS["small"],
+             color=C("surviving"), gid="surviving")
+    axr.text(3, S[zs <= 20].max() * 1.8, "parity-sensitive sum  S(z)", fontsize=FS["small"],
+             color=C("pair"), gid="pair")
+    axr.scatter([zs[-1]], [S[-1]], s=70, facecolor=C("PANEL_BG"), ec=C("TEXT"), lw=1.5, zorder=5,
+                gid="endpoint")
+    axr.annotate(f"z = {zs[-1]}, the largest prime ≤ √N:\nS(z) = M(z) = {S[-1]:,}",
+                 xy=(zs[-1], S[-1]), xytext=(1700, S[-1] * 7), ha="right", va="bottom",
+                 fontsize=FS["small"], color=C("TEXT"), linespacing=1.4,
+                 arrowprops=dict(arrowstyle="-", color=C("MUTED"), lw=0.8, shrinkB=6))
+
+    fig.text(0.216 / W, 0.18 / H,
+             f"At z = {zs[-1]}, the largest prime ≤ √N, every surviving pair is a pair of primes, so each term "
+             f"is (−1)(−1) = +1 and S(z) = M(z) = {S[-1]:,}: the Goldbach pairs of N = {N0:,}\n"
+             f"with both primes > √N, out of {d.goldbach_total:,} in all ({d.goldbach_small} have p ≤ √N). "
+             "S(z) > 0 at this level would establish a representation with both primes > √N, a statement "
+             "stronger than\nGoldbach for this N. The rise toward 1 comes from survivors being forced to have "
+             "fewer prime factors as z grows, not from the sieve overcoming the parity barrier. At shallower "
+             "levels, the divisibility\nconditions give little control over the Liouville parity of the "
+             "survivors. This is the phenomenon behind the parity problem in sieve theory; the figure proves "
+             "nothing about Goldbach’s conjecture.",
+             fontsize=FS["small"], color=C("MUTED"), va="bottom", linespacing=1.5)
     return fig, axes

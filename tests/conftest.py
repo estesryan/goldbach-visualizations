@@ -34,3 +34,28 @@ def figures(default_data):
         yield figs
     for fig, _ in figs.values():
         plt.close(fig)
+
+
+@pytest.fixture(scope="session")
+def parity():
+    """Parity figure data at the settings in extras/generate_parity_visualization.py."""
+    from extras import generate_parity_visualization as gp
+    from goldbach.visualization_data import parity_data
+    return parity_data(gp.PARITY_NS)
+
+
+@pytest.fixture(scope="session")
+def parity_figures(parity):
+    """Both parity layouts, built once from the same data, as {name: (fig, axes)}.
+    Built under the figure style and drawn once, as saving would."""
+    from goldbach.layout import PARITY_FIGURE_SIZES
+    from goldbach.render import build_parity_figure
+    from goldbach.style import apply_style
+    with matplotlib.rc_context():
+        apply_style()
+        figs = {name: build_parity_figure(name, parity) for name in PARITY_FIGURE_SIZES}
+        for fig, _ in figs.values():
+            fig.canvas.draw()
+        yield figs
+    for fig, _ in figs.values():
+        plt.close(fig)

@@ -1,4 +1,4 @@
-"""Data behind the seven visualizations. No plotting, colours or layout.
+"""Data behind the seven visualizations and the parity figure. No plotting, colours or layout.
 
 Each *_data() function returns the values the drawing code needs, computed from
 the run settings it is given. Arrays keep the dtypes the drawing code expects.
@@ -244,6 +244,41 @@ def sieve_data(heat_max, zs, moduli):
     pairs = nt.goldbach_pairs(heat_max)
     lost = [(p, q) for p, q in pairs if p <= zs[-1]]
     return SieveData(heat_max, list(zs), Ns, H, pairs, lost, tuple(moduli))
+
+
+# ---- beyond the poster: the parity-sensitive sieve sum (built separately, see parity_data)
+
+@dataclass(frozen=True)
+class ParitySweep:
+    N: int
+    zs: np.ndarray          # sieve levels: the primes <= √N; the last is the largest such prime
+    M: np.ndarray           # surviving pairs (a, N - a), 2 <= a <= N/2, at each level
+    S: np.ndarray           # sum of λ(a)·λ(N - a) over those survivors
+    average: np.ndarray     # S / M
+
+
+@dataclass(frozen=True)
+class ParityData:
+    sweeps: dict            # N -> ParitySweep, in the order given
+    featured: int           # N shown in the right panel: the last one given
+    goldbach_total: int     # Goldbach pairs of the featured N
+    goldbach_small: int     # of those, pairs with p <= √N
+
+
+def parity_data(Ns):
+    """Data for the parity figure. Not part of build_visualization_data: it is a
+    separate figure, and sieving near N = 10⁶ takes a few seconds."""
+    if any(N % 2 for N in Ns):
+        raise ValueError("N must be even")
+    lam = nt.liouville_table(max(Ns))
+    sweeps = {}
+    for N in Ns:
+        zs = np.array(nt.primes_between(2, isqrt(N) + 1))
+        M, S = nt.parity_sieve(N, zs, lam)
+        sweeps[N] = ParitySweep(N, zs, M, S, S / M)
+    featured = Ns[-1]
+    ps = nt.goldbach_smaller_primes(featured)
+    return ParityData(sweeps, featured, len(ps), int((ps <= isqrt(featured)).sum()))
 
 
 # ---- all visualizations

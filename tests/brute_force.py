@@ -138,3 +138,64 @@ def sieve_survivors(N, z):
     """a <= N/2 with neither a nor N - a divisible by any prime <= z."""
     pz = [d for d in range(2, z + 1) if is_prime(d)]
     return sum(1 for a in range(1, N // 2 + 1) if all(a % d and (N - a) % d for d in pz))
+
+
+# ---- Liouville's function and the parity-sensitive sieve sum
+
+def omega(n):
+    """Ω(n), prime factors with multiplicity, by trial division."""
+    k, d = 0, 2
+    while d * d <= n:
+        while n % d == 0:
+            n //= d
+            k += 1
+        d += 1
+    return k + (1 if n > 1 else 0)
+
+
+def liouville(n):
+    """λ(n) = (-1)^Ω(n) by trial division."""
+    return -1 if omega(n) % 2 else 1
+
+
+def smallest_prime_factors(limit):
+    """List spf with spf[n] the least prime factor of n for n >= 2 (spf[0] = spf[1] = 0)."""
+    spf = list(range(limit + 1))
+    spf[1] = 0
+    for i in range(2, isqrt(limit) + 1):
+        if spf[i] == i:
+            for j in range(i * i, limit + 1, i):
+                if spf[j] == j:
+                    spf[j] = i
+    return spf
+
+
+def liouville_from_spf(spf):
+    """List of λ(n) for n <= len(spf) - 1, from Ω(n) = Ω(n / spf(n)) + 1 (λ(0) = 0)."""
+    om = [0] * len(spf)
+    for n in range(2, len(spf)):
+        om[n] = om[n // spf[n]] + 1
+    lam = [-1 if k % 2 else 1 for k in om]
+    lam[0] = 0
+    return lam
+
+
+def parity_sweep(N, zs, spf, lam):
+    """(M, S) for each z in zs, as lists, over pairs (a, N - a) with 2 <= a <= N/2.
+
+    No sieving loop: a pair survives every prime <= z iff the least prime factors
+    of a and N - a both exceed z. One pass tallies the pairs by that minimum.
+    """
+    count, total = {}, {}
+    for a in range(2, N // 2 + 1):
+        m = min(spf[a], spf[N - a])
+        count[m] = count.get(m, 0) + 1
+        total[m] = total.get(m, 0) + lam[a] * lam[N - a]
+    Ms = [sum(c for m, c in count.items() if m > z) for z in zs]
+    Ss = [sum(s for m, s in total.items() if m > z) for z in zs]
+    return Ms, Ss
+
+
+def survivors(N, z, spf):
+    """The a with 2 <= a <= N/2 whose pair survives level z."""
+    return [a for a in range(2, N // 2 + 1) if min(spf[a], spf[N - a]) > z]

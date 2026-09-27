@@ -6,7 +6,8 @@ with that data, and check colours and text contrast. That the data itself is
 right is covered by test_visualization_data.py and, against independent
 brute-force implementations, by test_cross_checks.py.
 
-Label and caption checks use literal strings at the default settings.
+Label and caption checks use literal strings at the default settings. The
+parity figure is checked the same way at the end.
 """
 from collections import defaultdict
 
@@ -267,16 +268,14 @@ def artist_colours(art):
     return [to_hex(c) for c in out if c is not None and to_rgba(c)[3] > 0]
 
 
-def test_only_palette_colours_are_used(figure):
-    fig, _ = figure
+def stray_colours(fig):
+    """Colours drawn that are not in PALETTE."""
     allowed = {v.lower() for v in PALETTE.values()}
-    stray = [(type(a).__name__, c) for a in fig.findobj() if a.get_visible()
-             for c in artist_colours(a) if c.lower() not in allowed]
-    assert stray == []
+    return [(type(a).__name__, c) for a in fig.findobj() if a.get_visible()
+            for c in artist_colours(a) if c.lower() not in allowed]
 
 
-def test_each_semantic_role_uses_its_colour(figure):
-    fig, _ = figure
+def assert_semantic_roles(fig):
     role_cols = defaultdict(set)
     for a in fig.findobj():
         if a.get_visible() and a.get_gid() in SEMANTIC:
@@ -288,6 +287,26 @@ def test_each_semantic_role_uses_its_colour(figure):
         assert cols <= {C(role).lower(), C("PANEL_BG").lower(), C("BORDER").lower()}, role
 
 
+def low_contrast_text(fig, background=lambda t: C("PANEL_BG")):
+    """Visible text below MIN_TEXT_CONTRAST against its background (PANEL_BG by default)."""
+    low = []
+    for t in fig.findobj(Text):
+        if not t.get_visible() or not t.get_text().strip():
+            continue
+        bg = background(t)
+        if contrast(t.get_color(), bg) < MIN_TEXT_CONTRAST:
+            low.append((t.get_text()[:30], round(contrast(t.get_color(), bg), 2)))
+    return low
+
+
+def test_only_palette_colours_are_used(figure):
+    assert stray_colours(figure[0]) == []
+
+
+def test_each_semantic_role_uses_its_colour(figure):
+    assert_semantic_roles(figure[0])
+
+
 def test_text_contrast(figure):
     # Text is checked against PANEL_BG, the lighter background; heatmap cell labels
     # against their own cell colour.
@@ -295,12 +314,101 @@ def test_text_contrast(figure):
     heat = axes["heat4"]
     im = heat.images[0]
     cell_texts = set(heat.texts)
-    low = []
-    for t in fig.findobj(Text):
-        if not t.get_visible() or not t.get_text().strip():
-            continue
-        bg = to_hex(im.cmap(im.norm(int(t.get_text())))) if t in cell_texts else C("PANEL_BG")
-        if contrast(t.get_color(), bg) < MIN_TEXT_CONTRAST:
-            low.append((t.get_text()[:30], round(contrast(t.get_color(), bg), 2)))
-    assert low == []
+    cell_bg = lambda t: to_hex(im.cmap(im.norm(int(t.get_text())))) if t in cell_texts else C("PANEL_BG")
+    assert low_contrast_text(fig, cell_bg) == []
     assert contrast(C("MUTED"), C("PANEL_BG")) >= 7
+
+
+# ---- beyond the poster: the parity figure (parity_figures fixture, conftest.py)
+
+@pytest.fixture(params=["landscape", "linkedin_4x5"])
+def parity_figure(request, parity_figures):
+    """(fig, axes) for each parity layout in turn."""
+    return parity_figures[request.param]
+
+
+def parity_lines(ax, gid):
+    return [ln for ln in ax.lines if ln.get_gid() == gid]
+
+
+@pytest.mark.parity
+def test_parity_average_lines_show_s_over_m(parity_figure, parity):
+    _, axes = parity_figure
+    lines = parity_lines(axes["average"], "pair")
+    assert [ln.get_label() for ln in lines] == [f"N = {N:,}" for N in parity.sweeps]
+    for ln, sw in zip(lines, parity.sweeps.values()):
+        assert np.array_equal(ln.get_xdata(), sw.zs)
+        assert np.array_equal(ln.get_ydata(), sw.S / sw.M)
+
+
+@pytest.mark.parity
+def test_parity_sums_show_m_and_s(parity_figure, parity):
+    _, axes = parity_figure
+    sw = parity.sweeps[parity.featured]
+    (m,), (s,) = parity_lines(axes["sums"], "surviving"), parity_lines(axes["sums"], "pair")
+    assert np.array_equal(m.get_xdata(), sw.zs) and np.array_equal(m.get_ydata(), sw.M)
+    assert np.array_equal(s.get_xdata(), sw.zs) and np.array_equal(s.get_ydata(), sw.S)
+
+
+@pytest.mark.parity
+def test_parity_endpoint_marker_and_annotation(parity_figure, parity):
+    _, axes = parity_figure
+    ax = axes["sums"]
+    sw = parity.sweeps[parity.featured]
+    (marker,) = [c for c in ax.collections if c.get_gid() == "endpoint"]
+    assert marker.get_offsets().tolist() == [[sw.zs[-1], sw.S[-1]]]
+    (ann,) = [t for t in ax.texts if hasattr(t, "xy")]
+    assert ann.xy == (sw.zs[-1], sw.S[-1])
+    assert ann.get_text() == f"z = {sw.zs[-1]}, the largest prime ≤ √N:\nS(z) = M(z) = {sw.S[-1]:,}"
+
+
+@pytest.mark.parity
+def test_parity_labels(parity_figure):
+    # Number-bearing statements at the default settings; the numbers are cross-checked
+    # against trial division in test_cross_checks.py.
+    fig, axes = parity_figure
+    text = all_text(fig)
+    for N in ("999,000", "999,998", "1,000,000"):
+        assert f"N = {N}" in text, N
+    assert "2 ≤ a ≤ N/2" in text          # the range parity_sieve uses
+    assert "At z = 997, the largest prime ≤ √N, every surviving pair is a pair of primes" in text
+    assert "S(z) = M(z) = 5,382: the Goldbach pairs of N = 1,000,000\nwith both primes > √N" in text
+    assert "out of 5,402 in all (20 have p ≤ √N)" in text
+    assert "stronger than\nGoldbach for this N" in text
+    assert [t.get_text() for t in axes["average"].get_legend().get_texts()] == [
+        "N = 999,000", "N = 999,998", "N = 1,000,000"]
+
+
+@pytest.mark.parity
+def test_parity_curves_nearly_coincide(parity):
+    # Figure regression, not a mathematical claim: the subtitle says the three curves
+    # nearly coincide, which holds for these N (largest gap 0.024, at z = 479).
+    averages = np.vstack([sw.average for sw in parity.sweeps.values()])
+    assert np.ptp(averages, axis=0).max() < 0.03
+
+
+@pytest.mark.parity
+def test_parity_text_has_every_glyph(parity, caplog):
+    # A line with mathtext renders its plain text without per-glyph font fallback, so
+    # Greek letters outside $...$ would be drawn as dummy symbols in Poppins. Mathtext
+    # reports that through logging. (With DejaVu, which has every glyph, this always passes.)
+    import logging
+    import matplotlib.pyplot as plt
+    from goldbach.layout import PARITY_FIGURE_SIZES
+    from goldbach.render import build_parity_figure
+    from goldbach.style import apply_style
+    with matplotlib.rc_context(), caplog.at_level(logging.WARNING, logger="matplotlib"):
+        apply_style()
+        for name in PARITY_FIGURE_SIZES:
+            fig, _ = build_parity_figure(name, parity)
+            fig.canvas.draw()
+            plt.close(fig)
+    assert [r.getMessage() for r in caplog.records if "does not have a glyph" in r.getMessage()] == []
+
+
+@pytest.mark.parity
+def test_parity_colours_and_contrast(parity_figure):
+    fig, _ = parity_figure
+    assert stray_colours(fig) == []
+    assert_semantic_roles(fig)
+    assert low_contrast_text(fig) == []
