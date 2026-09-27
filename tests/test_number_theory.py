@@ -207,3 +207,51 @@ def test_sieve_survivors_cover_goldbach_pairs_above_z():
         pairs = nt.goldbach_pairs(N)
         for z, c in zip(zs, counts):
             assert c >= sum(1 for p, _ in pairs if p > z), (N, z)
+
+
+# ---- Liouville's function and the parity-sensitive sieve sum
+
+@pytest.mark.parity
+def test_liouville_known_values():
+    lam = nt.liouville_table(12)
+    assert list(lam) == [0, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, -1, -1]
+    assert lam.dtype == np.int64
+
+
+@pytest.mark.parity
+def test_liouville_is_completely_multiplicative():
+    lam = nt.liouville_table(10_000)
+    for m in range(1, 100):
+        for n in range(1, 10_000 // m + 1):
+            assert lam[m * n] == lam[m] * lam[n], (m, n)
+
+
+@pytest.mark.parity
+def test_liouville_on_primes_and_products_of_two_primes():
+    lam = nt.liouville_table(10_000)
+    ps = nt.primes_between(2, 101)
+    assert all(lam[p] == -1 for p in ps)
+    assert all(lam[p * q] == 1 for p in ps for q in ps)
+
+
+@pytest.mark.parity
+def test_parity_sieve_by_hand():
+    # N = 30. z = 2: odd a from 3 to 15, seven pairs; the terms are +1 except
+    # λ(5)·λ(25) = -1, so S = 5. z = 3 removes a = 3, 9, 15. z = 5 removes a = 5,
+    # leaving 7 + 23, 11 + 19, 13 + 17.
+    M, S = nt.parity_sieve(30, [2, 3, 5], nt.liouville_table(30))
+    assert list(M) == [7, 4, 3] and list(S) == [5, 2, 3]
+
+
+@pytest.mark.parity
+def test_parity_sieve_starts_at_a_equals_2():
+    # 1 + 7 would survive z = 2; the parity sieve leaves it out, sieve_survivors does not.
+    M, S = nt.parity_sieve(8, [2], nt.liouville_table(8))
+    assert list(M) == [1] and list(S) == [1]    # 3 + 5
+    assert nt.sieve_survivors(8, [2]) == [2]
+
+
+@pytest.mark.parity
+def test_goldbach_smaller_primes_agree_with_goldbach_pairs():
+    for N in range(4, 2001, 2):
+        assert list(nt.goldbach_smaller_primes(N)) == [p for p, _ in nt.goldbach_pairs(N)], N

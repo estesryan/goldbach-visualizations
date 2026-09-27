@@ -3,7 +3,7 @@
 The first group pins the brute-force helpers to known values, so the reference
 itself is checked. The second group compares number_theory with the brute-force
 helpers, and the third compares the visualization data with them, over the ranges the
-figures use.
+figures use. The parity figure's checks follow the same pattern at the end.
 """
 from collections import Counter
 from math import isqrt
@@ -317,3 +317,93 @@ def test_sieve_matches_brute_force():
         assert list(d.counts[:-1, j]) == [bf.sieve_survivors(n, z) for z in ZS], n
         assert d.counts[-1, j] == len(bf.goldbach_pairs(n)), n
     assert d.lost == [(p, q) for p, q in bf.goldbach_pairs(1000) if p <= 23]
+
+
+# ---- parity figure: brute-force helpers against known values
+
+@pytest.mark.parity
+def test_bf_liouville_known_values():
+    assert [bf.omega(n) for n in (1, 2, 12, 64, 97, 1_000_000)] == [0, 1, 3, 6, 1, 12]
+    assert [bf.liouville(n) for n in range(1, 13)] == [1, -1, -1, 1, -1, 1, -1, -1, 1, 1, -1, -1]
+
+
+@pytest.mark.parity
+def test_bf_liouville_summatory_values(bf_parity_tables):
+    # L(10^k) = sum of λ(n) for n <= 10^k, k = 1..6 (OEIS A090410).
+    _, lam = bf_parity_tables
+    assert [sum(lam[1:10 ** k + 1]) for k in range(1, 7)] == [0, -2, -14, -94, -288, -530]
+
+
+@pytest.mark.parity
+def test_bf_parity_sweep_by_hand():
+    # Same hand-worked N = 30 example as test_number_theory.test_parity_sieve_by_hand.
+    spf = bf.smallest_prime_factors(30)
+    lam = bf.liouville_from_spf(spf)
+    assert bf.parity_sweep(30, [2, 3, 5], spf, lam) == ([7, 4, 3], [5, 2, 3])
+    assert spf[2:16] == [2, 3, 2, 5, 2, 7, 2, 3, 2, 11, 2, 13, 2, 3]
+
+
+# ---- parity figure against brute force, at the extras/generate_parity_visualization.py settings
+
+@pytest.fixture(scope="module")
+def bf_parity_tables():
+    """Smallest prime factors and λ up to 10⁶, in pure Python (spf recursion)."""
+    spf = bf.smallest_prime_factors(1_000_000)
+    return spf, bf.liouville_from_spf(spf)
+
+
+@pytest.mark.parity
+def test_liouville_table_matches_spf_recursion(bf_parity_tables):
+    _, lam = bf_parity_tables
+    assert nt.liouville_table(1_000_000).tolist() == lam
+
+
+@pytest.mark.parity
+def test_liouville_table_matches_trial_division_sample():
+    import random
+    lam = nt.liouville_table(1_000_000)
+    for n in random.Random(1).sample(range(1, 1_000_001), 3000):
+        assert lam[n] == bf.liouville(n), n
+
+
+@pytest.mark.parity
+def test_parity_levels_are_the_primes_up_to_sqrt_n(parity):
+    for N, sw in parity.sweeps.items():
+        assert list(sw.zs) == bf.primes_between(2, isqrt(N) + 1), N
+        # The last level is the largest prime <= √N: no prime lies between it and √N.
+        assert not any(bf.is_prime(k) for k in range(sw.zs[-1] + 1, isqrt(N) + 1)), N
+
+
+@pytest.mark.parity
+def test_parity_counts_and_sums_match_least_prime_factor_count(parity, bf_parity_tables):
+    # Every plotted level for every N: M and S recounted without sieving.
+    spf, lam = bf_parity_tables
+    for N, sw in parity.sweeps.items():
+        Ms, Ss = bf.parity_sweep(N, [int(z) for z in sw.zs], spf, lam)
+        assert sw.M.tolist() == Ms, N
+        assert sw.S.tolist() == Ss, N
+
+
+@pytest.mark.parity
+def test_parity_endpoint_survivors_are_prime_pairs(parity, bf_parity_tables):
+    spf, _ = bf_parity_tables
+    for N, sw in parity.sweeps.items():
+        surv = bf.survivors(N, int(sw.zs[-1]), spf)
+        assert len(surv) == sw.M[-1], N
+        assert all(bf.is_prime(a) and bf.is_prime(N - a) for a in surv), N
+        assert all(bf.liouville(a) * bf.liouville(N - a) == 1 for a in surv), N
+
+
+@pytest.mark.parity
+def test_parity_endpoint_counts_goldbach_pairs_above_sqrt_n(parity):
+    # At the last level S = M = the trial-division count of pairs whose smaller prime exceeds √N.
+    for N, sw in parity.sweeps.items():
+        pairs = bf.goldbach_pairs(N)
+        assert sw.S[-1] == sw.M[-1] == sum(1 for p, _ in pairs if p > isqrt(N)), N
+
+
+@pytest.mark.parity
+def test_parity_caption_goldbach_counts(parity):
+    pairs = bf.goldbach_pairs(parity.featured)
+    assert parity.goldbach_total == len(pairs)
+    assert parity.goldbach_small == sum(1 for p, _ in pairs if p <= isqrt(parity.featured))

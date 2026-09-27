@@ -29,6 +29,7 @@ def test_importing_modules_does_not_change_rcparams():
         "import goldbach.number_theory, goldbach.visualization_data\n"
         "import goldbach.style, goldbach.layout\n"
         "import goldbach.render, generate_visualizations\n"
+        "from extras import generate_parity_visualization\n"
         "assert matplotlib.rcParams == before\n"
         "goldbach.style.apply_style()\n"
         "assert matplotlib.rcParams != before\n"
@@ -181,3 +182,78 @@ def test_build_figure_returns_named_axes(figures):
         for key, value in axes.items():
             for ax in value if isinstance(value, list) else [value]:
                 assert ax.figure is fig, key
+
+
+# ---- the parity figure (optional extra) and its generator
+
+PARITY_OUTPUTS = {"images/extras/parity-landscape.png": (3200, 1800),
+                  "images/extras/parity-linkedin-4x5.png": (2160, 2700)}
+POSTER_OUTPUTS = {"images/landscape.png", "images/landscape-preview.png",
+                  "images/linkedin-4x5.png", "images/linkedin-4x5-preview.png"}
+
+
+def written_files(root):
+    return {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()}
+
+
+def test_poster_generator_is_independent_of_the_parity_extra(tmp_path, monkeypatch):
+    # generate_visualizations.py knows nothing of the extra and writes only the poster.
+    import inspect
+    import generate_visualizations as gv
+    source = inspect.getsource(gv).lower()
+    assert "parity" not in source and "extras" not in source
+    assert gv.EXPORTS == {"landscape": (3600, 1200), "linkedin_4x5": (2160, 1080)}
+    assert set(layout.FIGURE_SIZES) == set(layout.LAYOUTS) == {"landscape", "linkedin_4x5"}
+    monkeypatch.chdir(tmp_path)
+    with matplotlib.rc_context():
+        gv.main()
+    assert written_files(tmp_path) == POSTER_OUTPUTS
+
+
+@pytest.mark.parity
+def test_parity_figure_sizes_and_cards():
+    assert layout.PARITY_FIGURE_SIZES == {"landscape": (16.0, 9.0), "linkedin_4x5": (16.2, 20.25)}
+    for name, (W, H) in layout.PARITY_FIGURE_SIZES.items():
+        cards = layout.PARITY_LAYOUTS[name]
+        for x, y, w, h in cards.values():
+            assert 0 <= x and x + w <= W + 1e-9 and 0 <= y and y + h <= H + 1e-9, name
+        (ax_, ay, aw, ah), (sx, sy, sw, sh) = cards["average"], cards["sums"]
+        if name == "landscape":
+            assert ay == sy and ax_ + aw < sx                   # side by side
+        else:
+            assert ax_ == sx and sy + sh < ay                   # stacked, average on top
+        assert (aw, ah) == pytest.approx((sw, sh))              # same size, not stretched
+
+
+@pytest.mark.parity
+def test_parity_figure_axes(parity_figures):
+    for name, (fig, axes) in parity_figures.items():
+        assert tuple(fig.get_size_inches()) == layout.PARITY_FIGURE_SIZES[name]
+        assert set(axes) == {"average", "sums"} and len(fig.axes) == 2
+        for ax in axes.values():
+            assert ax.figure is fig and ax.get_xscale() == "log"
+        assert axes["sums"].get_yscale() == "symlog"
+    # Same data, same drawn text in both layouts.
+    (fa, _), (fb, _) = parity_figures.values()
+    assert [t.get_text() for t in fa.texts] == [t.get_text() for t in fb.texts]
+
+
+@pytest.mark.parity
+def test_parity_generator_data_checks_pass(parity):
+    from extras import generate_parity_visualization as gp
+    checks = gp.sanity_checks(parity)
+    assert checks and all(ok for _, ok in checks), [d for d, ok in checks if not ok]
+
+
+@pytest.mark.parity
+def test_parity_generator_outputs(tmp_path):
+    # Run as documented, as a script by path, with outputs relative to the working
+    # directory (here a temporary one): both layouts at the export sizes, nothing else.
+    from PIL import Image
+    r = subprocess.run([sys.executable, str(REPO / "extras" / "generate_parity_visualization.py")],
+                       cwd=tmp_path, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert written_files(tmp_path) == set(PARITY_OUTPUTS)
+    for path, size in PARITY_OUTPUTS.items():
+        with Image.open(tmp_path / path) as im:
+            assert im.size == size, path

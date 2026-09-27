@@ -54,13 +54,62 @@ time. The worked example is N = 100.
    necessarily primes. The bottom row is the actual Goldbach count. Divisibility
    of N by small primes produces visible vertical structure in the heatmap.
 
+## Beyond the poster: what the sieve can't see
+
+![What the sieve can't see: a parity-sensitive sum over the pairs that survive sieving](images/extras/parity-landscape.png)
+
+The seven panels show local information: residue classes, the classes the
+involution p ↦ N − p leaves admissible, and the pairs that survive sieving by
+small primes. This optional extra, generated separately from the poster, asks
+what that kind of information does not retain.
+
+For even N and a sieve level z, a pair (a, N − a) with 2 ≤ a ≤ N/2 survives
+if neither a nor N − a has a prime factor ≤ z. Unlike panel 7, a starts at 2:
+1 has no prime factors, so (1, N − 1) would survive every level without being
+a pair of primes. The figure tracks two quantities as z runs through the
+primes up to √N:
+
+- M_z(N), the number of surviving pairs. This is what the sieve counts.
+- S_z(N), the sum of λ(a)·λ(N − a) over those pairs.
+
+Here λ is Liouville's function, λ(n) = (−1)^Ω(n), where Ω(n) counts prime
+factors with multiplicity. It is −1 on primes and +1 on products of two
+primes, so it records the parity of the number of prime factors. Sieve
+information comes from divisibility by small primes. This is closely related
+to the classical parity problem in sieve theory, which concerns the difficulty
+of distinguishing integers according to the parity of their number of prime
+factors using sieve information alone. The figure does not prove that result;
+it only illustrates the phenomenon numerically.
+
+The left panel plots the average S_z/M_z for N = 999,000, 999,998 and
+1,000,000; the right panel plots M_z and S_z for N = 1,000,000. At small z the
+average is close to 0, and as z grows it rises toward 1. At z = 997, the
+largest prime ≤ √N, every surviving pair is a pair of primes, so each term is
+(−1)(−1) = +1 and S_z = M_z = 5,382. These are the Goldbach pairs of 1,000,000
+with both primes greater than √N; of its 5,402 pairs, 20 have p ≤ √N.
+
+The rise toward 1 is not the sieve overcoming the parity barrier. It happens
+because, as z approaches √N, the surviving condition itself eventually forces
+primality: at the last level each number in a surviving pair is prime. At
+shallower levels, however, the local divisibility conditions give little
+control over the parity of Ω(n), which is the phenomenon this figure is meant
+to illustrate. S_z > 0 at the last level would establish a representation of N
+with both primes greater than √N, which is stronger than Goldbach's conjecture
+for that N.
+
+The figure illustrates a known obstruction for three values of N. It is not a
+proof of Goldbach's conjecture and not a method for getting around the parity
+barrier.
+
 ## Code layout
 
-- `generate_visualizations.py`: settings and image generation.
+- `generate_visualizations.py`: settings and image generation for the poster.
+- `extras/generate_parity_visualization.py`: settings and image generation for
+  the optional parity figure. The poster script does not use it.
 - `goldbach/number_theory.py`: primes, Goldbach pairs, residue arithmetic,
-  Gaussian and Eisenstein primes, and sieving.
+  Gaussian and Eisenstein primes, sieving, and Liouville's function.
 - `goldbach/visualization_data.py`: computes the data used by the seven
-  visualizations.
+  visualizations and, separately (`parity_data`), by the parity figure.
 - `goldbach/render.py`: draws that data using the styles and layouts defined
   alongside it in `goldbach/style.py` and `goldbach/layout.py`.
 - `tests/`: mathematical tests, independent cross-checks, and figure tests.
@@ -81,6 +130,14 @@ and read the drawn bars, points, cells, arrays and labels back from the figure.
 They check that these match the computed data, that only palette colours are
 used, and that text meets a minimum contrast.
 
+The parity figure's tests are marked `parity` (`python -m pytest -m parity`);
+run them before regenerating its images.
+They recompute λ by smallest-prime-factor recursion over the whole range and
+by trial division on a sample, recount M_z and S_z at every plotted level from
+least prime factors without sieving, check that every endpoint survivor is a
+pair of primes by trial division, and compare the endpoint and caption counts
+with trial-division Goldbach pairs.
+
 The tests check that the program computes and draws what it claims to. They
 are not a proof of Goldbach's conjecture.
 
@@ -90,6 +147,16 @@ are not a proof of Goldbach's conjecture.
 pip install -r requirements.txt
 python generate_visualizations.py
 ```
+
+The parity figure is optional and only generated when run explicitly:
+
+```
+python extras/generate_parity_visualization.py
+```
+
+It runs quick checks on the data it is about to draw and saves nothing if they
+fail. It does not run the tests; the independent checks are
+`python -m pytest -m parity`.
 
 Run from the repository root, since output paths are relative. The intended
 typography uses Poppins and Lora. If they are not installed, matplotlib falls
@@ -102,9 +169,11 @@ Requires Python 3.8 or later. Tested with Python 3.12.10, matplotlib 3.9.3 and n
 
 - `images/landscape.png`: 3600 × 2400
 - `images/linkedin-4x5.png`: 2160 × 2700
+- `images/extras/parity-landscape.png`: 3200 × 1800 (optional parity figure)
+- `images/extras/parity-linkedin-4x5.png`: 2160 × 2700 (optional parity figure)
 
-Running the script also writes smaller preview images
-(`images/*-preview.png`). These are generated outputs and are ignored by Git.
+The poster script also writes smaller preview images (`images/*-preview.png`).
+These are generated outputs and are ignored by Git.
 
 ## License
 

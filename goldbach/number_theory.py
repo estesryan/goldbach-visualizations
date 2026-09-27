@@ -167,3 +167,49 @@ def sieve_survivors(N, zs):
         keep &= (a % z != 0) & (b % z != 0)
         counts.append(keep.sum())
     return counts
+
+
+# ---- Liouville's function and a parity-sensitive sieve sum
+
+def liouville_table(limit):
+    """λ(n) = (-1)^Ω(n) for 0 <= n <= limit, with λ(0) = 0 as a placeholder.
+
+    Ω(n) counts prime factors with multiplicity: 1 is added for every prime
+    power dividing n.
+    """
+    primes = np.nonzero(_build_sieve(limit))[0]
+    omega = np.zeros(limit + 1, dtype=np.int16)
+    for p in primes:
+        pk = int(p)
+        while pk <= limit:
+            omega[pk::pk] += 1
+            pk *= int(p)
+    lam = np.where(omega % 2 == 0, 1, -1).astype(np.int64)
+    lam[0] = 0
+    return lam
+
+
+def parity_sieve(N, zs, lam):
+    """(M, S) for each sieve level z in zs, sieving the pairs (a, N - a), 2 <= a <= N/2.
+
+    A pair survives level z if neither a nor N - a is divisible by any of zs up to
+    and including z. M counts the survivors; S sums λ(a)·λ(N - a) over them.
+    lam is a table of λ covering N. Unlike sieve_survivors, a starts at 2: 1 has
+    no prime factors, so (1, N - 1) would survive every level without being a
+    pair of primes.
+    """
+    a = np.arange(2, N // 2 + 1); b = N - a
+    keep = np.ones_like(a, dtype=bool)
+    Ms, Ss = [], []
+    for z in zs:
+        keep &= (a % z != 0) & (b % z != 0)
+        Ms.append(int(keep.sum()))
+        Ss.append(int((lam[a[keep]] * lam[b[keep]]).sum()))
+    return np.array(Ms), np.array(Ss)
+
+
+def goldbach_smaller_primes(N):
+    """The primes p <= N/2 with N - p prime, as an array. Not limited by PRIME_LIMIT."""
+    sieve = _build_sieve(N)
+    p = np.nonzero(sieve[:N // 2 + 1])[0]
+    return p[sieve[N - p]]

@@ -13,6 +13,30 @@ FIGURE_SIZES = {
     "linkedin_4x5": (16.2, 20.25),      # 4:5, LinkedIn portrait 1080 x 1350
 }
 LAND = FIGURE_SIZES["landscape"]
+
+# The parity figure ("beyond the poster") is separate from the poster, in the same
+# two layouts. Sizes in inches; the portrait size is the poster's.
+PARITY_FIGURE_SIZES = {
+    "landscape": (16.0, 9.0),           # 16:9
+    "linkedin_4x5": FIGURE_SIZES["linkedin_4x5"],
+}
+PARITY_HEADER_IN = 1.40     # title and introduction, above the cards
+PARITY_FOOTER_IN = 1.30     # caption, below the cards
+
+
+def parity_cards(W, H):
+    """The two cards (x, y, w, h) in inches: "average" (S/M for each N) and "sums"
+    (M and S for the featured N). Side by side in landscape, stacked in portrait."""
+    m, g = 0.144, 0.09
+    y0, h = PARITY_FOOTER_IN, H - PARITY_HEADER_IN - PARITY_FOOTER_IN
+    if W > H:
+        w = (W - 2 * m - g) / 2
+        return {"average": (m, y0, w, h), "sums": (m + w + g, y0, w, h)}
+    h = (h - g) / 2
+    return {"average": (m, y0 + h + g, W - 2 * m, h), "sums": (m, y0, W - 2 * m, h)}
+
+
+PARITY_LAYOUTS = {name: parity_cards(*size) for name, size in PARITY_FIGURE_SIZES.items()}
 LAND_RECTS = {1: (0.008, 0.655, 0.326, 0.305), 2: (0.339, 0.655, 0.326, 0.305),
               3: (0.670, 0.655, 0.322, 0.305), 4: (0.008, 0.335, 0.40, 0.312),
               5: (0.413, 0.335, 0.579, 0.312), 6: (0.008, 0.008, 0.44, 0.319),
