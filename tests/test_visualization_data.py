@@ -212,6 +212,7 @@ def test_sieve_streak_claim_mod_3(sieve_data):
 def test_parity_default_settings():
     from extras import generate_parity_visualization as gp
     assert gp.PARITY_NS == (999_000, 999_998, 1_000_000)
+    assert gp.SPLIT_LEVELS == (7, 31)
 
 
 @pytest.mark.parity
@@ -223,6 +224,17 @@ def test_parity_known_values(parity):
     sw = parity.sweeps[1_000_000]
     assert (sw.M[0], sw.S[0]) == (249_999, -347)
     assert (parity.goldbach_total, parity.goldbach_small) == (5_402, 20)
+    assert parity.meet_level == 983
+    assert parity.class_splits == (vd.ClassSplit("all", None, 249_778, 250_221),
+                                   vd.ClassSplit("survivors", 7, 23_924, 23_695),
+                                   vd.ClassSplit("survivors", 31, 10_458, 10_222),
+                                   vd.ClassSplit("goldbach", None, 5_402, 0))
+
+
+@pytest.mark.parity
+def test_parity_split_level_must_be_a_sieve_level():
+    with pytest.raises(ValueError):
+        vd.parity_data((1_000,), (8,))
 
 
 @pytest.mark.parity

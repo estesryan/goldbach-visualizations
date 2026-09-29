@@ -25,15 +25,17 @@ PARITY_FOOTER_IN = 1.30     # caption, below the cards
 
 
 def parity_cards(W, H):
-    """The two cards (x, y, w, h) in inches: "average" (S/M for each N) and "sums"
-    (M and S for the featured N). Side by side in landscape, stacked in portrait."""
+    """The three cards (x, y, w, h) in inches: "average" (S/M for each N), "sums"
+    (M and S for the featured N) and "classes" (sign splits of groups of pairs).
+    Side by side in landscape, stacked in portrait."""
     m, g = 0.144, 0.09
     y0, h = PARITY_FOOTER_IN, H - PARITY_HEADER_IN - PARITY_FOOTER_IN
+    names = ("average", "sums", "classes")
     if W > H:
-        w = (W - 2 * m - g) / 2
-        return {"average": (m, y0, w, h), "sums": (m + w + g, y0, w, h)}
-    h = (h - g) / 2
-    return {"average": (m, y0 + h + g, W - 2 * m, h), "sums": (m, y0, W - 2 * m, h)}
+        w = (W - 2 * m - 2 * g) / 3
+        return {k: (m + i * (w + g), y0, w, h) for i, k in enumerate(names)}
+    h = (h - 2 * g) / 3
+    return {k: (m, y0 + (2 - i) * (h + g), W - 2 * m, h) for i, k in enumerate(names)}
 
 
 PARITY_LAYOUTS = {name: parity_cards(*size) for name, size in PARITY_FIGURE_SIZES.items()}

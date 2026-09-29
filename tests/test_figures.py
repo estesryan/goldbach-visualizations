@@ -359,7 +359,7 @@ def test_parity_endpoint_marker_and_annotation(parity_figure, parity):
     assert marker.get_offsets().tolist() == [[sw.zs[-1], sw.S[-1]]]
     (ann,) = [t for t in ax.texts if hasattr(t, "xy")]
     assert ann.xy == (sw.zs[-1], sw.S[-1])
-    assert ann.get_text() == f"z = {sw.zs[-1]}, the largest prime ≤ √N:\nS(z) = M(z) = {sw.S[-1]:,}"
+    assert ann.get_text() == f"z = {sw.zs[-1]} (largest prime ≤ √N):\nS = M = {sw.S[-1]:,}"
 
 
 @pytest.mark.parity
@@ -371,12 +371,33 @@ def test_parity_labels(parity_figure):
     for N in ("999,000", "999,998", "1,000,000"):
         assert f"N = {N}" in text, N
     assert "2 ≤ a ≤ N/2" in text          # the range parity_sieve uses
-    assert "At z = 997, the largest prime ≤ √N, every surviving pair is a pair of primes" in text
-    assert "S(z) = M(z) = 5,382: the Goldbach pairs of N = 1,000,000\nwith both primes > √N" in text
-    assert "out of 5,402 in all (20 have p ≤ √N)" in text
-    assert "stronger than\nGoldbach for this N" in text
+    assert "S = M = 5,382" in text
+    assert "from z = 983, every survivor has sign +1" in text
+    for label in ("all pairs, 2 ≤ a ≤ N/2", "survivors at z = 7", "survivors at z = 31", "Goldbach pairs"):
+        assert label in text, label
+    assert "+1: 5,402" in text and "−1: 0" in text
+    assert "surviving a shallow sieve ⇏ being a Goldbach pair" in text
+    assert "proves nothing about Goldbach’s conjecture" in text
     assert [t.get_text() for t in axes["average"].get_legend().get_texts()] == [
         "N = 999,000", "N = 999,998", "N = 1,000,000"]
+
+
+@pytest.mark.parity
+def test_parity_split_bars_show_the_class_splits(parity_figure, parity):
+    # Each row: a +1 bar from 0 to plus/total and a -1 bar from there to 1, top row first.
+    _, axes = parity_figure
+    ax = axes["classes"]
+    plus = [p for p in ax.patches if p.get_gid() == "sign_plus"]
+    minus = [p for p in ax.patches if p.get_gid() == "sign_minus"]
+    assert len(plus) == len(minus) == len(parity.class_splits)
+    n = len(parity.class_splits)
+    for k, (c, bp, bm) in enumerate(zip(parity.class_splits, plus, minus)):
+        t = c.plus + c.minus
+        assert bp.get_y() + bp.get_height() / 2 == pytest.approx(n - 1 - k)
+        assert bp.get_x() == 0 and bp.get_width() == pytest.approx(c.plus / t)
+        assert bm.get_x() == pytest.approx(c.plus / t) and bm.get_width() == pytest.approx(c.minus / t)
+    assert [c.kind for c in parity.class_splits] == ["all", "survivors", "survivors", "goldbach"]
+    assert any(ln.get_xdata()[0] == 0.5 for ln in ax.lines)    # the 50% divider
 
 
 @pytest.mark.parity

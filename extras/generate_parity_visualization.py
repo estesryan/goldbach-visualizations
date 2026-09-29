@@ -5,7 +5,10 @@ For even N and sieve level z, a pair (a, N - a) with 2 <= a <= N/2 survives if
 neither a nor N - a has a prime factor <= z. The figure plots, against z,
 
     M(z) = number of surviving pairs
-    S(z) = sum over the survivors of λ(a)·λ(N - a),   λ(n) = (-1)^Ω(n).
+    S(z) = sum over the survivors of λ(a)·λ(N - a),   λ(n) = (-1)^Ω(n),
+
+and splits groups of pairs (all pairs, survivors at SPLIT_LEVELS, Goldbach pairs)
+by the sign of λ(a)·λ(N - a).
 
 The mathematics is in goldbach/number_theory.py and visualization_data.py; the
 drawing is in render.py, with layout.py. This script runs a few quick checks on
@@ -35,6 +38,7 @@ from goldbach.visualization_data import parity_data  # noqa: E402
 
 # ================================================================ settings
 PARITY_NS = (999_000, 999_998, 1_000_000)   # even N; the M and S panel shows the last
+SPLIT_LEVELS = (7, 31)                      # sieve levels whose survivors the sign-split panel shows
 OUT_DIR = "images/extras"
 # name -> full-size px width; figure sizes are in layout.py
 EXPORTS = {
@@ -57,6 +61,17 @@ def sanity_checks(d):
         ]
     checks.append((f"N = {d.featured:,}: caption counts add up",
                    d.goldbach_total - d.goldbach_small == d.sweeps[d.featured].M[-1]))
+    sw = d.sweeps[d.featured]
+    i = list(sw.zs).index(d.meet_level)
+    checks.append((f"N = {d.featured:,}: S(z) = M(z) from z = {d.meet_level} on, and not just before",
+                   bool(np.all(sw.S[i:] == sw.M[i:])) and (i == 0 or sw.S[i - 1] != sw.M[i - 1])))
+    for c in d.class_splits:
+        if c.kind == "survivors":
+            j = list(sw.zs).index(c.z)
+            checks.append((f"survivors at z = {c.z}: split adds up to M(z) and S(z)",
+                           c.plus + c.minus == sw.M[j] and c.plus - c.minus == sw.S[j]))
+    gold = [c for c in d.class_splits if c.kind == "goldbach"][0]
+    checks.append(("every Goldbach pair has sign +1", gold.minus == 0 and gold.plus == d.goldbach_total))
     return checks
 
 
@@ -75,7 +90,7 @@ def main():
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
     apply_style()
-    data = parity_data(PARITY_NS)
+    data = parity_data(PARITY_NS, SPLIT_LEVELS)
     bad = [desc for desc, ok in sanity_checks(data) if not ok]
     if bad:
         raise SystemExit("data check(s) failed; nothing saved:\n  " + "\n  ".join(bad))

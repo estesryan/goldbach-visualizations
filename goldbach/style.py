@@ -28,6 +28,7 @@ SEMANTIC = {
     "partner": "ACCENT_2",
     "excluded": "EXCLUDED", "lattice": "EXCLUDED",
     "pair": "HIGHLIGHT",
+    "sign_plus": "HIGHLIGHT", "sign_minus": "ACCENT_2",    # λ(a)·λ(N - a) = +1 / -1 (parity figure)
     "exception": "WARNING",
     "fixed": "TEXT",
 }

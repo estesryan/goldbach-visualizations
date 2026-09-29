@@ -407,3 +407,34 @@ def test_parity_caption_goldbach_counts(parity):
     pairs = bf.goldbach_pairs(parity.featured)
     assert parity.goldbach_total == len(pairs)
     assert parity.goldbach_small == sum(1 for p, _ in pairs if p <= isqrt(parity.featured))
+
+
+@pytest.mark.parity
+def test_parity_class_splits_match_brute_force(parity, bf_parity_tables):
+    # Every split recounted by λ from the pure-Python table, without sieving.
+    spf, lam = bf_parity_tables
+    N = parity.featured
+    sw = parity.sweeps[N]
+    for c in parity.class_splits:
+        if c.kind == "all":
+            signs = [lam[a] * lam[N - a] for a in range(2, N // 2 + 1)]
+        elif c.kind == "survivors":
+            signs = [lam[a] * lam[N - a] for a in bf.survivors(N, c.z, spf)]
+            i = list(sw.zs).index(c.z)
+            assert c.plus + c.minus == sw.M[i] and c.plus - c.minus == sw.S[i]
+        else:
+            pairs = bf.goldbach_pairs(N)
+            signs = [bf.liouville(p) * bf.liouville(q) for p, q in pairs]
+            assert c.minus == 0 and c.plus == len(pairs)        # every Goldbach pair has sign +1
+        assert (c.plus, c.minus) == (signs.count(1), signs.count(-1)), c
+
+
+@pytest.mark.parity
+def test_parity_meet_level(parity, bf_parity_tables):
+    # From the pure-Python sweep: S = M at every level from meet_level on, and not just before.
+    spf, lam = bf_parity_tables
+    zs = [int(z) for z in parity.sweeps[parity.featured].zs]
+    Ms, Ss = bf.parity_sweep(parity.featured, zs, spf, lam)
+    i = zs.index(parity.meet_level)
+    assert Ss[i:] == Ms[i:]
+    assert i == 0 or Ss[i - 1] != Ms[i - 1]
