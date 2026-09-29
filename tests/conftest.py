@@ -41,7 +41,7 @@ def parity():
     """Parity figure data at the settings in extras/generate_parity_visualization.py."""
     from extras import generate_parity_visualization as gp
     from goldbach.visualization_data import parity_data
-    return parity_data(gp.PARITY_NS)
+    return parity_data(gp.PARITY_NS, gp.SPLIT_LEVELS)
 
 
 @pytest.fixture(scope="session")

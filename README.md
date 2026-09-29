@@ -81,12 +81,22 @@ of distinguishing integers according to the parity of their number of prime
 factors using sieve information alone. The figure does not prove that result;
 it only illustrates the phenomenon numerically.
 
-The left panel plots the average S_z/M_z for N = 999,000, 999,998 and
-1,000,000; the right panel plots M_z and S_z for N = 1,000,000. At small z the
-average is close to 0, and as z grows it rises toward 1. At z = 997, the
-largest prime ≤ √N, every surviving pair is a pair of primes, so each term is
-(−1)(−1) = +1 and S_z = M_z = 5,382. These are the Goldbach pairs of 1,000,000
-with both primes greater than √N; of its 5,402 pairs, 20 have p ≤ √N.
+The figure has three panels:
+
+- **Parity stays hidden at shallow sieve depth.** The average S_z/M_z for
+  N = 999,000, 999,998 and 1,000,000. At small z it is close to 0: the
+  survivors split almost evenly by the sign of λ(a)·λ(N − a).
+- **Parity resolves only when forced.** M_z and S_z for N = 1,000,000. They
+  meet only near √N: from z = 983 every survivor has sign +1, and at z = 997,
+  the largest prime ≤ √N, every surviving pair is a pair of primes, so
+  S_z = M_z = 5,382. These are the Goldbach pairs of 1,000,000 with both primes
+  greater than √N; of its 5,402 pairs, 20 have p ≤ √N.
+- **Same to the sieve, opposite for Goldbach.** Groups of pairs for
+  N = 1,000,000 split by the sign of λ(a)·λ(N − a): all pairs, the survivors at
+  z = 7 and z = 31, and the Goldbach pairs. The first three are close to 50/50;
+  all 5,402 Goldbach pairs have sign +1 and none has sign −1. Surviving a shallow
+  sieve therefore does not make a pair a Goldbach pair: divisibility by small
+  primes does not determine the sign.
 
 The rise toward 1 is not the sieve overcoming the parity barrier. It happens
 because, as z approaches √N, the surviving condition itself eventually forces
@@ -135,8 +145,9 @@ run them before regenerating its images.
 They recompute λ by smallest-prime-factor recursion over the whole range and
 by trial division on a sample, recount M_z and S_z at every plotted level from
 least prime factors without sieving, check that every endpoint survivor is a
-pair of primes by trial division, and compare the endpoint and caption counts
-with trial-division Goldbach pairs.
+pair of primes by trial division, compare the endpoint and caption counts
+with trial-division Goldbach pairs, and recount every sign split in the third
+panel from λ without sieving.
 
 The tests check that the program computes and draws what it claims to. They
 are not a proof of Goldbach's conjecture.

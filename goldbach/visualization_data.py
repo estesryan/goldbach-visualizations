@@ -6,6 +6,7 @@ the run settings it is given. Arrays keep the dtypes the drawing code expects.
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from math import isqrt
+from typing import Optional
 
 import numpy as np
 
@@ -258,16 +259,30 @@ class ParitySweep:
 
 
 @dataclass(frozen=True)
+class ClassSplit:
+    """One group of pairs (a, N - a) of the featured N, split by the sign of λ(a)·λ(N - a)."""
+    kind: str               # "all" (2 <= a <= N/2), "survivors" (at level z) or "goldbach"
+    z: Optional[int]        # the sieve level for "survivors", else None
+    plus: int               # pairs with λ(a)·λ(N - a) = +1
+    minus: int              # pairs with λ(a)·λ(N - a) = -1
+
+
+@dataclass(frozen=True)
 class ParityData:
     sweeps: dict            # N -> ParitySweep, in the order given
     featured: int           # N shown in the right panel: the last one given
     goldbach_total: int     # Goldbach pairs of the featured N
     goldbach_small: int     # of those, pairs with p <= √N
+    meet_level: int         # featured N: first level from which S(z) = M(z) at every later level
+    class_splits: tuple     # ClassSplit for all pairs, survivors at each split level, Goldbach pairs
 
 
-def parity_data(Ns):
+def parity_data(Ns, split_levels=(7, 31)):
     """Data for the parity figure. Not part of build_visualization_data: it is a
-    separate figure, and sieving near N = 10⁶ takes a few seconds."""
+    separate figure, and sieving near N = 10⁶ takes a few seconds.
+
+    split_levels: sieve levels (primes <= √N) at which the featured N's survivors
+    are split by sign. Each split comes from M and S: plus = (M + S)/2, minus = (M - S)/2."""
     if any(N % 2 for N in Ns):
         raise ValueError("N must be even")
     lam = nt.liouville_table(max(Ns))
@@ -277,8 +292,25 @@ def parity_data(Ns):
         M, S = nt.parity_sieve(N, zs, lam)
         sweeps[N] = ParitySweep(N, zs, M, S, S / M)
     featured = Ns[-1]
+    sw = sweeps[featured]
     ps = nt.goldbach_smaller_primes(featured)
-    return ParityData(sweeps, featured, len(ps), int((ps <= isqrt(featured)).sum()))
+
+    unequal = np.nonzero(sw.S != sw.M)[0]
+    meet_level = int(sw.zs[unequal[-1] + 1 if len(unequal) else 0])
+
+    a = np.arange(2, featured // 2 + 1)
+    sign = lam[a] * lam[featured - a]
+    splits = [ClassSplit("all", None, int((sign == 1).sum()), int((sign == -1).sum()))]
+    for z in split_levels:
+        i = np.nonzero(sw.zs == z)[0]
+        if len(i) != 1:
+            raise ValueError(f"split level {z} is not a sieve level of N = {featured}")
+        M, S = int(sw.M[i[0]]), int(sw.S[i[0]])
+        splits.append(ClassSplit("survivors", int(z), (M + S) // 2, (M - S) // 2))
+    g = lam[ps] * lam[featured - ps]
+    splits.append(ClassSplit("goldbach", None, int((g == 1).sum()), int((g == -1).sum())))
+    return ParityData(sweeps, featured, len(ps), int((ps <= isqrt(featured)).sum()),
+                      meet_level, tuple(splits))
 
 
 # ---- all visualizations

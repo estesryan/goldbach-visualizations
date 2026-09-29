@@ -217,22 +217,25 @@ def test_parity_figure_sizes_and_cards():
         cards = layout.PARITY_LAYOUTS[name]
         for x, y, w, h in cards.values():
             assert 0 <= x and x + w <= W + 1e-9 and 0 <= y and y + h <= H + 1e-9, name
-        (ax_, ay, aw, ah), (sx, sy, sw, sh) = cards["average"], cards["sums"]
+        assert list(cards) == ["average", "sums", "classes"]
+        (ax_, ay, aw, ah), (sx, sy, sw, sh), (cx, cy, cw, ch) = cards.values()
         if name == "landscape":
-            assert ay == sy and ax_ + aw < sx                   # side by side
+            assert ay == sy == cy and ax_ + aw < sx and sx + sw < cx     # side by side, in order
         else:
-            assert ax_ == sx and sy + sh < ay                   # stacked, average on top
-        assert (aw, ah) == pytest.approx((sw, sh))              # same size, not stretched
+            assert ax_ == sx == cx and cy + ch < sy and sy + sh < ay     # stacked, average on top
+        assert (aw, ah) == pytest.approx((sw, sh)) and (cw, ch) == pytest.approx((sw, sh))   # same size
 
 
 @pytest.mark.parity
 def test_parity_figure_axes(parity_figures):
     for name, (fig, axes) in parity_figures.items():
         assert tuple(fig.get_size_inches()) == layout.PARITY_FIGURE_SIZES[name]
-        assert set(axes) == {"average", "sums"} and len(fig.axes) == 2
+        assert set(axes) == {"average", "sums", "classes"} and len(fig.axes) == 3
         for ax in axes.values():
-            assert ax.figure is fig and ax.get_xscale() == "log"
+            assert ax.figure is fig
+        assert axes["average"].get_xscale() == axes["sums"].get_xscale() == "log"
         assert axes["sums"].get_yscale() == "symlog"
+        assert axes["classes"].get_xlim() == (0, 1)
     # Same data, same drawn text in both layouts.
     (fa, _), (fb, _) = parity_figures.values()
     assert [t.get_text() for t in fa.texts] == [t.get_text() for t in fb.texts]
