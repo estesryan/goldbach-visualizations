@@ -467,7 +467,7 @@ def build_parity_figure(name, d):
                  arrowprops=dict(arrowstyle="-", color=C("MUTED"), lw=0.8, shrinkB=6))
 
     # 3. Sign splits: what the sieve leaves balanced, and where the Goldbach pairs lie.
-    card(fig, cards["classes"], "Same to the sieve, opposite for Goldbach",
+    card(fig, cards["classes"], "Goldbach lies entirely in one parity class",
          f"Pairs split by the sign of λ(a)·λ(N − a), N = {N0:,}.")
     x, y, w, h = cards["classes"]
     axc = fig.add_axes([(x + 0.3) / W, (y + 0.95) / H, (w - 0.6) / W, (h - 2.05) / H])
