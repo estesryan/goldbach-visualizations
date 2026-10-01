@@ -16,6 +16,7 @@ too. The experiment measures where the first survivor lands relative to W.
     data.py      computation, fitting and the exact blocks (no plotting)
     layout.py    figure sizes and panel geometry, landscape and portrait separately
     render.py    the figures, their colours, annotations and captions
+    framework.py the framework figure that introduces the experiment
     generate.py  settings and image generation:
                  python -m extras.first_survivor_experiment.generate [--blocks]
 

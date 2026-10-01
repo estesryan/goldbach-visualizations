@@ -2,9 +2,10 @@
 
 Run from the repository root:
 
-    python -m extras.first_survivor_experiment.generate            # main figure
+    python -m extras.first_survivor_experiment.generate            # framework and main figures
     python -m extras.first_survivor_experiment.generate --blocks   # and the exact-block appendix
 
+  ->  images/extras/first-survivor-framework.png      3200 x 1800 (16:9)
   ->  images/extras/first-survivor-landscape.png      3200 x 1800 (16:9)
   ->  images/extras/first-survivor-linkedin-4x5.png   2160 x 2700 (4:5)
   ->  images/extras/first-survivor-blocks.png         2000 x 1600 (with --blocks)
@@ -22,6 +23,9 @@ import matplotlib.pyplot as plt
 from goldbach.style import apply_style
 
 from .data import exact_blocks, first_survivor_data
+from .framework import SIZE as FRAMEWORK_SIZE
+from .framework import WIDTH_PX as FRAMEWORK_WIDTH_PX
+from .framework import build_framework_figure, framework_data
 from .layout import BLOCKS_SIZE, BLOCKS_WIDTH_PX, EXPORT_WIDTH_PX, FIGURE_SIZES
 from .render import build_blocks_figure, build_figure
 
@@ -33,6 +37,10 @@ FIT_CUTOFF_EXPS = (14, 17, 20)  # nested fits over the bins inside N < 2^K
 SMALL_MAX = 288                 # panel B's linear view: even N through the q = 13 block (17² = 289)
 CENTRE_ZOOM = 120               # panel A: offsets 0..CENTRE_ZOOM near the centre
 EDGE_ZOOM = 90                  # panel A: offsets within EDGE_ZOOM of W
+# framework figure: a target small enough to draw every offset, one block, and a run of blocks
+FRAMEWORK_N = 272               # q = 13, W = 33, first survivor at 27, a composite survivor at d = W
+FRAMEWORK_BLOCK_Q = 23          # panel B: the block 23² < N < 29²
+FRAMEWORK_SPAN = (11, 31)       # panel C: the blocks from q = 11 through q = 31
 # --blocks: q = the largest prime <= each target; every even N in each block is computed
 BLOCK_TARGETS = (1100, 1420, 1830, 2360, 3050, 3930, 5070, 6540,
                  8430, 10870, 14020, 18080, 23310, 30060, 38770, 50000)
@@ -65,6 +73,15 @@ def sanity_checks(d):
     ]
 
 
+def save_framework(out_dir=OUT_DIR):
+    """Draw and save the framework figure; returns its path."""
+    fd = framework_data(FRAMEWORK_N, FRAMEWORK_BLOCK_Q, FRAMEWORK_SPAN)
+    fig, _ = build_framework_figure(fd)
+    out = f"{out_dir}/first-survivor-framework.png"
+    save(fig, out, FRAMEWORK_WIDTH_PX / FRAMEWORK_SIZE[0])
+    return out
+
+
 def save(fig, out, dpi):
     fig.savefig(out, dpi=dpi)
     plt.close(fig)
@@ -95,6 +112,7 @@ def main(argv=None):
     if bad:
         raise SystemExit("data check(s) failed; nothing saved:\n  " + "\n  ".join(bad))
     os.makedirs(OUT_DIR, exist_ok=True)
+    save_framework()
     for name, px in EXPORT_WIDTH_PX.items():
         fig, _ = build_figure(name, data, SMALL_MAX)
         save(fig, f"{OUT_DIR}/first-survivor-{name.replace('_', '-')}.png", px / FIGURE_SIZES[name][0])

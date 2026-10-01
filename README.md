@@ -113,11 +113,27 @@ barrier.
 
 ## Beyond the poster: where the first survivor lands
 
-![Where the first survivor lands: the first sieve survivor against the forcing boundary](images/extras/first-survivor-landscape.png)
-
 The parity figure ends at the largest prime ≤ √N, where every survivor is a pair
 of primes. This second optional extra asks where that forcing comes from, and
-where the first survivor lands relative to it.
+where the first survivor lands relative to it. Once composite survivors become
+possible, sieve survival alone no longer identifies a prime pair. The forcing
+boundary marks the threshold where that ambiguity begins. The framework below
+shows how the first-survivor offset is defined relative to that boundary.
+
+![Framework: the first survivor and the forcing boundary](images/extras/first-survivor-framework.png)
+
+Panel A draws one small target, N = 272 (q = 13), on its offset line, with
+every valid offset d standing for the pair (136 − d, 136 + d). The first
+survivor and the nearest Goldbach pair both sit at d = 27, inside the forcing
+boundary W = 33. At d = W the upper endpoint is 13² = 169, and the pair
+103 + 169 survives the sieve while being composite. Panel B shows one
+prime-square block, 23² < N < 29², where W(N) is a straight line and the
+first-survivor offsets are discrete points beneath it. Panel C places the blocks
+from q = 11 to q = 31 side by side: W resets upward at each q², giving a
+sawtooth, while the first-survivor offsets stay below it. The results figure
+below measures the same comparison over every even N with 6 ≤ N < 2²⁰.
+
+![Where the first survivor lands: the first sieve survivor against the forcing boundary](images/extras/first-survivor-landscape.png)
 
 **Symmetric offsets.** Write an even N as 2C. Each candidate pair is
 (C − d, C + d) for an offset 0 ≤ d ≤ C − 2, so both numbers are at least 2. Let q
@@ -248,7 +264,8 @@ these finite ranges only and do not establish an asymptotic growth law.
 - `extras/first_survivor_experiment/`: the first-survivor experiment, kept
   self-contained: `data.py` (computation, fits and exact blocks), `layout.py`
   (landscape and portrait geometry), `render.py` (figures, colour roles,
-  captions) and `generate.py` (settings and image generation). The poster and the
+  captions), `framework.py` (the framework figure: its own data, layout and
+  drawing) and `generate.py` (settings and image generation). The poster and the
   parity figure do not use it.
 - `goldbach/number_theory.py`: primes, Goldbach pairs, residue arithmetic,
   Gaussian and Eisenstein primes, sieving, Liouville's function, and the
@@ -333,7 +350,7 @@ fail. It does not run the tests; the independent checks are
 The first-survivor experiment is also optional:
 
 ```
-python -m extras.first_survivor_experiment.generate            # main figure, about 5 s
+python -m extras.first_survivor_experiment.generate            # framework and main figures, about 5 s
 python -m extras.first_survivor_experiment.generate --blocks   # also the exact-block appendix, about 20 s
 python -m pytest -m first_survivor
 ```
@@ -354,6 +371,7 @@ Requires Python 3.8 or later. Tested with Python 3.12.10, matplotlib 3.9.3 and n
 - `images/linkedin-4x5.png`: 2160 × 2700
 - `images/extras/parity-landscape.png`: 3200 × 1800 (optional parity figure)
 - `images/extras/parity-linkedin-4x5.png`: 2160 × 2700 (optional parity figure)
+- `images/extras/first-survivor-framework.png`: 3200 × 1800 (optional first-survivor experiment)
 - `images/extras/first-survivor-landscape.png`: 3200 × 1800 (optional first-survivor experiment)
 - `images/extras/first-survivor-linkedin-4x5.png`: 2160 × 2700 (optional first-survivor experiment)
 - `images/extras/first-survivor-blocks.png`: 2000 × 1600 (optional, with `--blocks`)

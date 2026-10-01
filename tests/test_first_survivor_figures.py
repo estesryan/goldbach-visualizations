@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+from extras.first_survivor_experiment.framework import build_framework_figure, framework_data
 from extras.first_survivor_experiment.layout import FIGURE_SIZES
 from extras.first_survivor_experiment.render import ROLES, build_blocks_figure, build_figure, col
 from goldbach.style import PALETTE, apply_style
@@ -201,11 +202,80 @@ def test_colours_roles_and_contrast(first_survivor_figures, name):
     assert low_contrast_text(fig) == []
 
 
+# ---- the framework figure
+
+@pytest.fixture(scope="module")
+def framework():
+    """The framework figure at the settings in generate.py, as (data, fig, axes)."""
+    from extras.first_survivor_experiment import generate
+    with matplotlib.rc_context():
+        apply_style()
+        fd = framework_data(generate.FRAMEWORK_N, generate.FRAMEWORK_BLOCK_Q, generate.FRAMEWORK_SPAN)
+        fig, axes = build_framework_figure(fd)
+        fig.canvas.draw()
+        yield fd, fig, axes
+    plt.close(fig)
+
+
+def test_framework_example_is_exact(framework, first_survivor):
+    fd, _, axes = framework
+    e = fd.line
+    assert (e.N, e.C, e.q, e.W, e.lam_sieve, e.lam_prime) == (272, 136, 13, 33, 27, 27)
+    assert e.d.tolist() == list(range(e.C - 1))                       # every valid offset is drawn
+    assert e.d[e.alive & ~e.prime_pair].tolist() == [e.W]             # the only composite survivor is at d = W
+    sw = first_survivor.sweep                                         # agrees with the main computation
+    i = int(np.searchsorted(sw.N, e.N))
+    assert (sw.q[i], sw.W[i], sw.lam_sieve[i], sw.lam_prime[i]) == (e.q, e.W, e.lam_sieve, e.lam_prime)
+    ax = axes["line"]
+    assert bar_xs(ax, "surviving") == e.d[e.alive & e.prime_pair].tolist()
+    assert bar_xs(ax, "exception") == [e.W]
+    (ps,), (pp,) = points(ax, "surviving"), points(ax, "pair", hollow=True)
+    assert ps[0] == e.lam_sieve and pp[0] == e.lam_prime and ps[1] != pp[1]
+
+
+def test_framework_blocks_match_the_sweep(framework, first_survivor):
+    fd, _, axes = framework
+    b, sw = fd.blocks, first_survivor.sweep
+    s = (sw.N >= b.N[0]) & (sw.N <= b.N[-1])
+    assert np.array_equal(b.N, sw.N[s]) and np.array_equal(b.W, sw.W[s])
+    assert np.array_equal(b.lam_sieve, sw.lam_sieve[s])
+    assert b.qs == (11, 13, 17, 19, 23, 29, 31) and (b.lam_sieve < b.W).all()
+    (line,) = lines_with(axes["block"], "boundary")
+    inb = b.q == fd.block_q
+    assert np.array_equal(line.get_xdata(), b.N[inb]) and np.all(np.diff(line.get_ydata()) == -1)
+    assert points(axes["block"], "surviving") == rounded(zip(b.N[inb], b.lam_sieve[inb]))
+    assert len(lines_with(axes["blocks"], "boundary")) == len(b.qs)  # one straight segment per block
+
+
+def test_framework_labels_size_and_output(framework, tmp_path):
+    from matplotlib.image import imread
+
+    from extras.first_survivor_experiment import generate
+    _, fig, axes = framework
+    assert tuple(fig.get_size_inches()) == (16.0, 9.0) and set(axes) == {"line", "block", "blocks"}
+    text = text_of(fig)
+    for s in ("Framework: the first survivor and the forcing boundary", r"\lambda_{\mathrm{sieve}}",
+              r"\lambda_{\mathrm{prime}}", "W = q² − C", "W(N) = 23² − N/2", "prime-square block", "q² = 169",
+              "W = 33", "d = W:  103 + 13²  survives but is composite", "d < W:  survival forces a prime pair",
+              "d ≥ W:  composite survivors possible", "nearest prime pair · 109 + 163", "first survivor",
+              "23² < N < 29²"):
+        assert s in text, s
+    # every block in panel C is labelled by its q, and the highlight names the block, not a panel
+    labels = [t.get_text() for t in axes["blocks"].texts]
+    assert all(f"q = {q}" in labels for q in (11, 13, 17, 19, 23, 29, 31)) and "panel B" not in text
+    assert stray_colours(fig) == [] and low_contrast_text(fig) == []
+    with matplotlib.rc_context():
+        apply_style()
+        out = generate.save_framework(str(tmp_path))
+    assert imread(out).shape[:2] == (1800, 3200)
+
+
 def test_text_has_every_glyph(first_survivor, first_survivor_blocks, caplog):
     with matplotlib.rc_context(), caplog.at_level(logging.WARNING, logger="matplotlib"):
         apply_style()
         figs = [build_figure(n, first_survivor)[0] for n in FIGURE_SIZES]
         figs.append(build_blocks_figure(first_survivor_blocks, first_survivor)[0])
+        figs.append(build_framework_figure(framework_data())[0])
         for fig in figs:
             fig.canvas.draw()
             plt.close(fig)
