@@ -213,3 +213,166 @@ def goldbach_smaller_primes(N):
     sieve = _build_sieve(N)
     p = np.nonzero(sieve[:N // 2 + 1])[0]
     return p[sieve[N - p]]
+
+
+# ---- symmetric offsets around N/2: first sieve survivor, nearest Goldbach pair
+#
+# For even N = 2C, q is the largest prime below √N and the pair at offset d is
+# (C - d, C + d). Offsets run over 0 <= d <= C - 2, so both numbers are at least 2;
+# (1, N - 1) is left out, as in parity_sieve. A pair survives if neither number has
+# a prime factor below q. A composite n < q² has a prime factor below q, so a
+# survivor with C + d < q², i.e. d < W = q² - C, is a pair of primes. The functions
+# below compute each quantity separately and do not assume that.
+
+def spf_table(limit):
+    """Least prime factor of n for 0 <= n <= limit, as an int32 array (0 for n = 0, 1)."""
+    spf = np.zeros(limit + 1, dtype=np.int32)
+    for i in range(2, isqrt(limit) + 1):
+        if spf[i] == 0:
+            s = spf[i * i::i]
+            s[s == 0] = i
+    n = np.arange(limit + 1, dtype=np.int32)
+    unset = (spf == 0) & (n >= 2)
+    spf[unset] = n[unset]
+    return spf
+
+
+def primes_from_spf(spf):
+    """The primes up to len(spf) - 1, as an int64 array."""
+    n = np.arange(len(spf))
+    return n[(n >= 2) & (spf == n)].astype(np.int64)
+
+
+def largest_prime_below_sqrt(Ns, primes):
+    """q(N), the largest prime below √N, for each even N >= 6.
+
+    An even N >= 6 is not the square of a prime, so p < √N iff p <= isqrt(N).
+    primes must reach isqrt(max(Ns)).
+    """
+    Ns = np.asarray(Ns, dtype=np.int64)
+    if (Ns < 6).any() or (Ns % 2).any():
+        raise ValueError("N must be even and at least 6")
+    s = np.floor(np.sqrt(Ns.astype(np.float64))).astype(np.int64)
+    s -= s * s > Ns                     # exact isqrt after float rounding
+    s += (s + 1) * (s + 1) <= Ns
+    return primes[np.searchsorted(primes, s, side="right") - 1]
+
+
+def forcing_boundary(Ns, qs):
+    """W(N) = q² - N/2. A survivor at offset d < W has C + d < q²."""
+    Ns, qs = np.asarray(Ns, dtype=np.int64), np.asarray(qs, dtype=np.int64)
+    return qs * qs - Ns // 2
+
+
+def _first_offset(Cs, ok):
+    """For each centre C, the least d with 0 <= d <= C - 2 and ok(C - d, C + d, idx), or -1.
+
+    ok gets the lows, highs and indices (into Cs) of the centres still searching.
+    """
+    out = np.full(len(Cs), -1, dtype=np.int64)
+    todo = np.arange(len(Cs))
+    d = 0
+    while len(todo):
+        todo = todo[Cs[todo] - d >= 2]
+        if not len(todo):
+            break
+        c = Cs[todo]
+        hit = ok(c - d, c + d, todo)
+        out[todo[hit]] = d
+        todo = todo[~hit]
+        d += 1
+    return out
+
+
+def first_survivor_offsets(Ns, qs, spf):
+    """λ_sieve(N): the least d, 0 <= d <= C - 2, with neither C - d nor C + d divisible
+    by a prime below q. Uses least prime factors only; no primality test. -1 if none."""
+    Ns, qs = np.asarray(Ns, dtype=np.int64), np.asarray(qs, dtype=np.int64)
+    return _first_offset(Ns // 2, lambda lo, hi, i: (spf[lo] >= qs[i]) & (spf[hi] >= qs[i]))
+
+
+def nearest_goldbach_offsets(Ns, spf):
+    """λ_prime(N), the nearest Goldbach-pair offset: the least d, 0 <= d <= C - 2, with
+    C - d and C + d both prime (OEIS A047160 at C). The two primes are 2d apart.
+    -1 if none."""
+    Ns = np.asarray(Ns, dtype=np.int64)
+    return _first_offset(Ns // 2, lambda lo, hi, i: (spf[lo] == lo) & (spf[hi] == hi))
+
+
+def composite_survivors(Ns, qs, spf, primes):
+    """(first, count): for each N, the least offset of a surviving pair that is not a
+    pair of primes, and how many such offsets there are (-1 and 0 if none).
+
+    Precondition: each q must be the sieve depth of its N, the largest prime below √N,
+    as largest_prime_below_sqrt returns; primes must contain every prime p' with
+    q_i·p' < N_i, i.e. reach at least max_i floor((N_i - 1) / q_i). The reasoning
+    below depends on it and the function does not check it.
+
+    A composite m < N with no prime factor below q is then q·p' with p' a prime >= q:
+    two factors >= r, the next prime after q, would give m >= r² > N, and three
+    factors >= q would give m >= q³ >= N. The pair is (m, N - m), at offset |C - m|,
+    and survives if N - m >= 2 has no prime factor below q. Each surviving pair is
+    counted once.
+    """
+    Ns, qs = np.asarray(Ns, dtype=np.int64), np.asarray(qs, dtype=np.int64)
+    Cs = Ns // 2
+    first = np.full(len(Ns), -1, dtype=np.int64)
+    count = np.zeros(len(Ns), dtype=np.int64)
+    j0 = np.searchsorted(primes, qs)
+    j = 0
+    while True:
+        k = j0 + j
+        live = k < len(primes)
+        m = qs * primes[np.minimum(k, len(primes) - 1)]
+        live &= m < Ns
+        if not live.any():
+            break
+        partner = np.where(live, Ns - m, 2)
+        live &= (partner >= 2) & (spf[partner] >= qs)
+        # A pair with both numbers composite is met twice, once from each side; keep the
+        # meeting where m is the larger number (m >= C).
+        live &= (m >= Cs) | (spf[partner] == partner)
+        d = np.abs(Cs - m)
+        first = np.where(live & ((first < 0) | (d < first)), d, first)
+        count += live
+        j += 1
+    return first, count
+
+
+def rough_segment(a, b, q, primes):
+    """Boolean array over a..b: True where n has no prime factor below q. Needs a > q."""
+    if a <= q:
+        raise ValueError("segment must start above q")
+    ok = np.ones(b - a + 1, dtype=bool)
+    for p in primes[primes < q].tolist():
+        ok[(-a) % p::p] = False
+    return ok
+
+
+def block_first_survivor_offsets(q, r, primes, margin=4096):
+    """(Ns, λ_sieve) for every even N with q² < N < r², q and r consecutive primes.
+
+    Every N in the block has sieve depth q. One segmented sieve by the primes below
+    q covers every C ± d needed; the margin doubles until every centre has a survivor.
+    """
+    lo = q * q + 1
+    lo += lo % 2
+    hi = r * r - 1
+    hi -= hi % 2
+    Ns = np.arange(lo, hi + 1, 2, dtype=np.int64)
+    Cs = Ns // 2
+    while True:
+        a = int(Cs[0]) - margin
+        ok = rough_segment(a, int(Cs[-1]) + margin, q, primes)
+        lam = np.full(len(Cs), -1, dtype=np.int64)
+        todo = np.arange(len(Cs))
+        k = Cs - a
+        for d in range(min(margin, int(Cs[0]) - 2) + 1):
+            if not len(todo):
+                break
+            hit = ok[k[todo] - d] & ok[k[todo] + d]
+            lam[todo[hit]] = d
+            todo = todo[~hit]
+        if not len(todo):
+            return Ns, lam
+        margin *= 2

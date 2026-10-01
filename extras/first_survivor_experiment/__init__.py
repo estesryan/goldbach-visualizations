@@ -1,0 +1,29 @@
+"""Optional extra, beyond the poster: where the first survivor lands.
+
+For even N = 2C, let q be the largest prime below √N and sieve the symmetric pairs
+(C - d, C + d), 0 <= d <= C - 2, by every prime below q. Three quantities are kept
+separate:
+
+    λ_sieve(N)   the first-survivor offset: the least d whose pair survives
+    λ_prime(N)   the nearest Goldbach-pair offset: the least d with C - d and C + d
+                 both prime (the two primes are 2d apart)
+    W(N)         the forcing boundary q² - N/2
+
+A composite n < q² has a prime factor below q, so a survivor with d < W is a pair of
+primes. Any closer pair of primes that are both at least q would survive too, so
+the first survivor is then also the nearest pair, except possibly for N < q² + q,
+where a closer pair could use a prime below q; the tests check those N directly.
+The experiment measures where the first survivor lands relative to W.
+
+    data.py      computation, fitting and the exact blocks (no plotting)
+    layout.py    figure sizes and panel geometry, landscape and portrait separately
+    render.py    the figures, their colours, annotations and captions
+    framework.py the framework figure that introduces the experiment
+    generate.py  settings and image generation:
+                 python -m extras.first_survivor_experiment.generate [--blocks]
+
+Shared mathematical primitives are in goldbach/number_theory.py. The poster and the
+parity extra do not use this package. The independent checks are the tests:
+python -m pytest -m first_survivor. The fitted exponents describe finite computed
+ranges only and are not asymptotic claims.
+"""
