@@ -236,9 +236,9 @@ They are neither joined nor fitted together with the dyadic bins.
 
 ### Limitations
 
-These are finite computations: every even N < 2²⁰, plus 16 selected
-prime-square blocks up to q < 50,000. The fitted exponents describe these finite
-ranges only and do not establish an asymptotic growth law.
+These are finite computations: every even N with 6 ≤ N < 2²⁰, plus 16
+selected prime-square blocks up to q < 50,000. The fitted exponents describe
+these finite ranges only and do not establish an asymptotic growth law.
 
 ## Code layout
 
@@ -294,7 +294,7 @@ and `tests/test_first_survivor_figures.py`, with brute-force references in
 - recompute λ_sieve from the gcd definition with big-integer primorials for
   every N below 4,000, and check that the search stops at d = C − 2;
 - recompute λ_sieve, λ_prime and q from a pure-Python least-prime-factor list for
-  every even N below 2²⁰, and by trial division on a sample;
+  every even N with 6 ≤ N < 2²⁰, and by trial division on a sample;
 - derive the 22 exceptions and the 13 composite-first cases by brute force;
 - enumerate every surviving offset, for all N below 4,000 and a sample above, to
   check that no composite survivor lies below W;
@@ -338,8 +338,8 @@ python -m extras.first_survivor_experiment.generate --blocks   # also the exact-
 python -m pytest -m first_survivor
 ```
 
-It computes every even N below 2²⁰ at run time, runs quick checks on the data it
-is about to draw, and saves nothing if they fail.
+It computes every even N with 6 ≤ N < 2²⁰ at run time, runs quick checks on the
+data it is about to draw, and saves nothing if they fail.
 
 Run from the repository root, since output paths are relative. The intended
 typography uses Poppins and Lora. If they are not installed, matplotlib falls
