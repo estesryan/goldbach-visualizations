@@ -152,7 +152,6 @@ def test_labels(figure):
               "Every even N with 122 ≤ N < $2^{20}$",
               "at most 0.818·W (at N = 272)",
               "this range cannot separate a power law from slower growth",
-              "it does not resolve the parity problem or prove Goldbach’s conjecture",
               "none is asymptotic",
               r"$2\alpha_N$: q-units via $N \approx q^2$"):
         assert s in text, s
@@ -164,6 +163,8 @@ def test_labels(figure):
     # about all sieve information.
     assert "to $2^{20}$" not in text and "through $2^{20}$" not in text
     assert "Sieve information alone" not in text
+    # The figure stays descriptive: no statements about proof status.
+    assert "prove" not in text.lower() and "parity problem" not in text and "conjecture" not in text
 
 
 def test_blocks_figure(first_survivor_figures, first_survivor_blocks, first_survivor):

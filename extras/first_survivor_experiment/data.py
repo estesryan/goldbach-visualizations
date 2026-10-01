@@ -2,8 +2,8 @@
 
 first_survivor_data() computes every even N in the main range, the worked target,
 the dyadic envelope and its fits, and the complete prime-square blocks inside the
-range. exact_blocks() computes the selected blocks beyond it. Every number the
-figures print comes from these objects.
+range. exact_blocks() computes the selected blocks beyond it. All reported
+mathematical values in the figures are derived from these objects.
 """
 from dataclasses import dataclass
 

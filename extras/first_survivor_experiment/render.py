@@ -1,5 +1,5 @@
 """Draws the first-survivor figures from FirstSurvivorData. Nothing here computes
-the mathematics; every number printed comes from the data.
+the mathematics; every reported mathematical value comes from the data.
 
 build_figure(name, d) draws the main figure in one layout; build_blocks_figure()
 draws the appendix of exact blocks. Artists carry their colour role as gid, and
@@ -344,14 +344,13 @@ def caption(d):
         f"For every even N from {d.min_N} to {d.n_max - 2:,} the first survivor lies inside the forcing boundary, "
         "so it is a pair of primes and equals the nearest Goldbach pair.",
         f"Below {d.min_N} it lies at or beyond W for {len(d.exceptions)} values of N, "
-        f"all with {keep(f'q ≤ {last_q}')}, "
+        f"{keep(f'all with q ≤ {last_q}')}, "
         f"and {len(d.composite_first)} of those first survivors are composite.",
         f"Composite survivors occur for {d.n_with_composite:,} of the {int(big.sum()):,} even N from {d.min_N} to "
         f"{d.n_max - 2:,}, "
         "never below W.",
-        f"From {d.min_N} the first-survivor offset is at most {d.max_ratio:.3f}·W (at N = {d.max_ratio_N}).",
+        f"From {d.min_N} the first-survivor offset is at most {d.max_ratio:.3f}·W {keep(f'(at N = {d.max_ratio_N})')}.",
         f"The fits describe this finite range only: {growth}",
-        "This is a finite computation; it does not resolve the parity problem or prove Goldbach’s conjecture.",
     ]
 
 

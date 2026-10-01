@@ -304,7 +304,8 @@ def composite_survivors(Ns, qs, spf, primes):
     pair of primes, and how many such offsets there are (-1 and 0 if none).
 
     Precondition: each q must be the sieve depth of its N, the largest prime below √N,
-    as largest_prime_below_sqrt returns; primes must reach max(N) / q. The reasoning
+    as largest_prime_below_sqrt returns; primes must contain every prime p' with
+    q_i·p' < N_i, i.e. reach at least max_i floor((N_i - 1) / q_i). The reasoning
     below depends on it and the function does not check it.
 
     A composite m < N with no prime factor below q is then q·p' with p' a prime >= q:

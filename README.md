@@ -143,12 +143,12 @@ nearest pair of primes: a pair of primes ≥ q survives the sieve automatically,
 so any closer pair would itself be a survivor at a smaller offset, contradicting
 the definition of the first survivor. Hence λ_sieve(N) = λ_prime(N).
 
-At or beyond W a survivor can be composite, so W is the smallest offset at which
-one could occur. When d = W lies in the valid offset range 0 ≤ d ≤ C − 2
-(equivalently W ≥ 0 and N − q² ≥ 2), the upper endpoint is q², which has no
-prime factor below q. A composite survivor then occurs at d = W exactly when the
-other endpoint, N − q², also has no prime factor below q. At N = q² + 1, for
-instance, d = W = C − 1 is outside the range. The experiment measures where the
+No composite survivor can occur at a valid offset d < W. When d = W itself lies
+in the valid offset range 0 ≤ d ≤ C − 2 (equivalently W ≥ 0 and N − q² ≥ 2), it
+is therefore the first offset at which a composite survivor can occur. There
+C + W = q², which has no prime factor below q, so a composite survivor occurs at
+d = W exactly when the other endpoint, N − q², also has no prime factor below q.
+At N = q² + 1, for instance, d = W = C − 1 is outside the range. The experiment measures where the
 first survivor lands relative to that boundary.
 
 **The small exceptions.** Every even N from 6 to 1,048,574 (below 2²⁰) is
@@ -160,9 +160,8 @@ For the other 9 it is a pair of primes outside the boundary. W ≤ 0 occurs only
 these blocks; for the poster's N = 100, W = −1.
 
 **The exhaustive result.** For every even N with 122 ≤ N < 2²⁰, that is from the
-start of the q = 11 block through 1,048,574, λ_sieve(N) < W(N). In particular
-this holds from N = 132. In that range the first survivor is always the nearest
-Goldbach pair. The largest ratio λ_sieve/W is 27/33 ≈ 0.818, at N = 272.
+start of the q = 11 block through 1,048,574, λ_sieve(N) < W(N). In that range
+the first survivor is always the nearest Goldbach pair. The largest ratio λ_sieve/W is 27/33 ≈ 0.818, at N = 272.
 Composite survivors occur for 175,468 of those 524,227 values of N, but never
 below W.
 
@@ -237,11 +236,9 @@ They are neither joined nor fitted together with the dyadic bins.
 
 ### Limitations
 
-These are finite computations: every even N below 2²⁰, plus 16 selected blocks
-up to q < 50,000. They do not prove Goldbach's conjecture and do not resolve the
-parity problem. Guaranteeing a first survivor inside the boundary for every N
-would itself be a form of Goldbach's conjecture. The fitted exponents describe
-this range only and state no growth law.
+These are finite computations: every even N < 2²⁰, plus 16 selected
+prime-square blocks up to q < 50,000. The fitted exponents describe these finite
+ranges only and do not establish an asymptotic growth law.
 
 ## Code layout
 

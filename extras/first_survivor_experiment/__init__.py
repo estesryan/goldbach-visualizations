@@ -21,6 +21,6 @@ too. The experiment measures where the first survivor lands relative to W.
 
 Shared mathematical primitives are in goldbach/number_theory.py. The poster and the
 parity extra do not use this package. The independent checks are the tests:
-python -m pytest -m first_survivor. Nothing here proves Goldbach's conjecture,
-states an asymptotic exponent or resolves the parity problem.
+python -m pytest -m first_survivor. The fitted exponents describe finite computed
+ranges only and are not asymptotic claims.
 """

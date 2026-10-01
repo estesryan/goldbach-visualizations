@@ -165,13 +165,13 @@ def test_exceptions_by_brute_force(first_survivor):
 
 
 def test_headline_range(first_survivor):
-    # The last exception is N = 120, the end of the q = 7 block, so λ_sieve < W from
-    # N = 122 on; the earlier statement "from N = 132" holds a fortiori.
+    # The last exception is N = 120, the end of the q = 7 block, so λ_sieve < W for
+    # every even 122 <= N < 2^20.
     d = first_survivor
     sw = d.sweep
     inside = sw.lam_sieve < sw.W
     assert d.min_N == 122
-    assert inside[sw.N >= 122].all() and inside[sw.N >= 132].all() and not inside[sw.N == 120].all()
+    assert inside[sw.N >= 122].all() and not inside[sw.N == 120].all()
     assert sw.q[sw.N == 120][0] == 7 and sw.q[sw.N == 122][0] == 11
     assert (sw.W[sw.N >= 122] > 0).all() and (sw.W[sw.N <= 120] <= 0).sum() > 0
 
