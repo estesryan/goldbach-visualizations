@@ -59,3 +59,37 @@ def parity_figures(parity):
         yield figs
     for fig, _ in figs.values():
         plt.close(fig)
+
+
+@pytest.fixture(scope="session")
+def first_survivor():
+    """First-survivor data at the settings in extras/first_survivor_experiment/generate.py."""
+    from extras.first_survivor_experiment import generate
+    return generate.load()
+
+
+@pytest.fixture(scope="session")
+def first_survivor_blocks():
+    """The exact selected blocks at the settings in extras/first_survivor_experiment/generate.py."""
+    from extras.first_survivor_experiment import generate
+    from extras.first_survivor_experiment.data import exact_blocks
+    return exact_blocks(generate.BLOCK_TARGETS)
+
+
+@pytest.fixture(scope="session")
+def first_survivor_figures(first_survivor, first_survivor_blocks):
+    """Both main layouts and the blocks figure, built once, as {name: (fig, axes)}.
+    Built under the figure style and drawn once, as saving would."""
+    from extras.first_survivor_experiment import generate
+    from extras.first_survivor_experiment.layout import FIGURE_SIZES as FS_SIZES
+    from extras.first_survivor_experiment.render import build_blocks_figure, build_figure
+    from goldbach.style import apply_style
+    with matplotlib.rc_context():
+        apply_style()
+        figs = {name: build_figure(name, first_survivor, generate.SMALL_MAX) for name in FS_SIZES}
+        figs["blocks"] = build_blocks_figure(first_survivor_blocks, first_survivor)
+        for fig, _ in figs.values():
+            fig.canvas.draw()
+        yield figs
+    for fig, _ in figs.values():
+        plt.close(fig)
