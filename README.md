@@ -120,7 +120,7 @@ possible, sieve survival alone no longer identifies a prime pair. The forcing
 boundary marks the threshold where that ambiguity begins. The framework below
 shows how the first-survivor offset is defined relative to that boundary.
 
-**The criterion.** Write N = 2C and let q be the largest prime below √N, that
+**What the experiment tests.** Write N = 2C and let q be the largest prime below √N, that
 is, the largest prime whose square is less than N. Sieve each pair
 (C − d, C + d) by the primes below q. The first-survivor offset λ_sieve(N) is
 the first offset whose pair survives, and the forcing boundary is
