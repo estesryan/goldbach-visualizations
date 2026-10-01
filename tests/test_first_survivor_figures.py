@@ -17,7 +17,7 @@ import pytest
 from extras.first_survivor_experiment.layout import FIGURE_SIZES
 from extras.first_survivor_experiment.render import ROLES, build_blocks_figure, build_figure, col
 from goldbach.style import PALETTE, apply_style
-from test_figures import all_text, artist_colours, low_contrast_text, points, rounded, stray_colours
+from figure_test_helpers import all_text, artist_colours, low_contrast_text, points, rounded, stray_colours
 
 pytestmark = pytest.mark.first_survivor
 
@@ -138,8 +138,8 @@ def test_labels(figure):
     fig, _ = figure
     text = text_of(fig).replace("\n", " ")
     for s in ("Where the first survivor lands",
-              "Sieve information alone cannot distinguish primes from products of two sufficiently large primes.",
-              "Below q², no such composite survivor can occur, so a sieve survivor there is prime by size alone.",
+              "Survival alone does not distinguish a prime from a composite whose prime factors are all at least q.",
+              "Below q², no such composite can occur, so a sieve survivor there is prime by size alone.",
               "The experiment measures where the first survivor lands relative to that forcing boundary.",
               "N = 999,008, so C = 499,504 and q = 997; W = q² − C = 494,505.",
               "here both sit at d = 45: 499,459 + 499,549.",
@@ -148,7 +148,8 @@ def test_labels(figure):
               "51 survivors have d ≥ W",
               "For every even N from 122 to 1,048,574 the first survivor lies inside the forcing boundary",
               "Below 122 it lies at or beyond W for 22 values of N, all with q ≤ 7, and 13 of those",
-              "Composite survivors occur for 175,468 of the 524,227 N from 122, never below W.",
+              "Composite survivors occur for 175,468 of the 524,227 even N from 122 to 1,048,574, never below W.",
+              "Every even N with 122 ≤ N < $2^{20}$",
               "at most 0.818·W (at N = 272)",
               "this range cannot separate a power law from slower growth",
               "it does not resolve the parity problem or prove Goldbach’s conjecture",
@@ -159,6 +160,10 @@ def test_labels(figure):
     # exponent is called asymptotic.
     assert "fitted q exponent" not in text.lower()
     assert "asymptotic" not in text.replace("none is asymptotic", "")
+    # The range is N < 2^20: no wording that could include 2^20 itself, and no claim
+    # about all sieve information.
+    assert "to $2^{20}$" not in text and "through $2^{20}$" not in text
+    assert "Sieve information alone" not in text
 
 
 def test_blocks_figure(first_survivor_figures, first_survivor_blocks, first_survivor):
@@ -172,7 +177,7 @@ def test_blocks_figure(first_survivor_figures, first_survivor_blocks, first_surv
     (one,) = lines_with(axes["ratio"], "boundary")                   # the boundary only as the ratio 1
     assert set(one.get_ydata()) == {1}
     text = text_of(fig).replace("\n", " ")
-    for s in ("16 blocks are selected by a fixed rule", "q from 1,097 to 49,999, 3,395,436 values of N, all computed",
+    for s in ("16 blocks are selected by a fixed rule", "largest prime at or below each","q from 1,097 to 49,999, 3,395,436 values of N, all computed",
               "the first survivor lies inside the forcing boundary for every N", "not an envelope",
               "they are not joined or fitted", "states no growth law"):
         assert s in text, s

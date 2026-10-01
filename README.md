@@ -127,21 +127,29 @@ be the largest prime below √N, and sieve every pair by the primes below q.
 gcd(C² − d², P) = 1, where P is the product of the primes below q. It is computed
 from divisibility alone.
 
-**The central Goldbach gap.** λ_prime(N) is the least d with C − d and C + d both
-prime ([OEIS A047160](https://oeis.org/A047160) at C). The two are separate
-definitions: a first survivor need not be prime.
+**The nearest Goldbach-pair offset.** λ_prime(N) is the least d with C − d and
+C + d both prime ([OEIS A047160](https://oeis.org/A047160) at C). It is an offset
+from the centre: the two primes are 2d apart. The two λ are separate definitions:
+a first survivor need not be prime.
 
 **The forcing boundary.** W(N) = q² − N/2 is the offset at which C + d reaches q².
 
-**Why survival below q² forces primality.** Sieve information alone cannot
-distinguish primes from products of two sufficiently large primes. A composite
-number below q², however, has a prime factor below q, so no such composite
-survivor can occur there: a sieve survivor with d < W is prime by size alone. So
-whenever λ_sieve(N) < W(N), the first survivor is a pair of primes, and
-λ_sieve(N) = λ_prime(N). At or beyond W a survivor can be composite. The first
-place one can occur is d = W itself, where C + d = q², and it does whenever
-N − q² has no prime factor below q. The experiment measures where the first
-survivor lands relative to that boundary.
+**Why survival below q² forces primality.** After sieving by the primes below q,
+survival alone does not distinguish a prime from a composite whose prime factors
+are all at least q. Such a composite is at least q², so none can occur below q²:
+a sieve survivor with d < W is prime by size alone. So whenever
+λ_sieve(N) < W(N), the first survivor is a pair of primes. It is then also the
+nearest pair of primes: a pair of primes ≥ q survives the sieve automatically,
+so any closer pair would itself be a survivor at a smaller offset, contradicting
+the definition of the first survivor. Hence λ_sieve(N) = λ_prime(N).
+
+At or beyond W a survivor can be composite, so W is the smallest offset at which
+one could occur. When d = W lies in the valid offset range 0 ≤ d ≤ C − 2
+(equivalently W ≥ 0 and N − q² ≥ 2), the upper endpoint is q², which has no
+prime factor below q. A composite survivor then occurs at d = W exactly when the
+other endpoint, N − q², also has no prime factor below q. At N = q² + 1, for
+instance, d = W = C − 1 is outside the range. The experiment measures where the
+first survivor lands relative to that boundary.
 
 **The small exceptions.** Every even N from 6 to 1,048,574 (below 2²⁰) is
 computed. The first survivor lies at or beyond W for 22 values of N, all in the
@@ -151,11 +159,12 @@ survivor is composite (8, 16, 18, 20, 44, 48, 92, 96, 98, 102, 108, 110, 116).
 For the other 9 it is a pair of primes outside the boundary. W ≤ 0 occurs only in
 these blocks; for the poster's N = 100, W = −1.
 
-**The exhaustive result.** From N = 122, the start of the q = 11 block, through
-2²⁰, λ_sieve(N) < W(N) for every N. In particular this holds from N = 132. In
-that range the first survivor is always the nearest Goldbach pair. The largest
-ratio λ_sieve/W is 27/33 ≈ 0.818, at N = 272. Composite survivors occur for
-175,468 of the 524,227 values of N from 122, but never below W.
+**The exhaustive result.** For every even N with 122 ≤ N < 2²⁰, that is from the
+start of the q = 11 block through 1,048,574, λ_sieve(N) < W(N). In particular
+this holds from N = 132. In that range the first survivor is always the nearest
+Goldbach pair. The largest ratio λ_sieve/W is 27/33 ≈ 0.818, at N = 272.
+Composite survivors occur for 175,468 of those 524,227 values of N, but never
+below W.
 
 The figure has three panels:
 
@@ -171,8 +180,8 @@ The figure has three panels:
   complete prime-square blocks q² < N < r² through q = 13. Within each block, W
   falls linearly (by 1 per step of 2 in N), while λ_sieve moves in discrete jumps.
   The exceptions are marked by whether the first survivor is composite (filled) or
-  a prime pair outside W (hollow). A second view covers every N from 122 to 2²⁰ on
-  a log N axis. It shows the distribution of λ_sieve as the share of the N in each
+  a prime pair outside W (hollow). A second view covers every even N with
+  122 ≤ N < 2²⁰ on a log N axis. It shows the distribution of λ_sieve as the share of the N in each
   column. The offset axis is symlog, so λ_sieve = 0 (N/2 prime) keeps its own row.
   W is drawn over the distribution. In the top bin [2¹⁹, 2²⁰), W ≥ 252,697 while
   λ_sieve ≤ 1,281.
@@ -199,8 +208,8 @@ from 2α_N because q < √N, most at small N.
 
 **Drift and growth-law uncertainty.** The fitted exponent drifts down as the range
 grows. It also depends on where the fit starts: starting the bins at 2¹¹ instead
-of 2⁸ gives 0.534, 0.415 and 0.371. Drift like this is what growth slower than any
-power would produce. Fitting λ ≈ B·(log N)^β to the same maxima gives β = 4.58,
+of 2⁸ gives 0.534, 0.415 and 0.371. Such downward drift is compatible with growth
+slower than any fixed power, but is not diagnostic of it. Fitting λ ≈ B·(log N)^β to the same maxima gives β = 4.58,
 4.37 and 4.23. Its residual sums of squares (0.114, 0.123 and 0.153) are smaller
 than the power law's (0.116, 0.212 and 0.421) over every range. This range does
 not distinguish a power law from such slower growth. Neither model is established
@@ -211,8 +220,8 @@ by it, and neither fitted exponent is an asymptotic statement.
 ![Exact prime-square blocks beyond the main range](images/extras/first-survivor-blocks.png)
 
 With `--blocks`, the script also computes 16 complete prime-square blocks
-q² < N < r², for q from 1,097 to 49,999. Each q is the largest prime below one of
-a fixed list of log-spaced targets, so the selection is deterministic. The
+q² < N < r², for q from 1,097 to 49,999. Each q is the largest prime at or below
+one of a fixed list of log-spaced targets, so the selection is deterministic. The
 selection is sparse, but nothing inside a block is sampled. Every even N in each
 selected block, 3,395,436 in all, is computed with a segmented sieve, so each
 point is an exact block maximum, not a lower bound. In every selected block the
@@ -247,8 +256,8 @@ this range only and state no growth law.
 - `goldbach/number_theory.py`: primes, Goldbach pairs, residue arithmetic,
   Gaussian and Eisenstein primes, sieving, Liouville's function, and the
   symmetric-offset primitives behind the first-survivor experiment (least prime
-  factors, sieve depth q, forcing boundary, first-survivor and central-gap
-  searches, composite survivors, segmented sieving of prime-square blocks).
+  factors, sieve depth q, forcing boundary, first-survivor and nearest
+  Goldbach-pair offset searches, composite survivors, segmented sieving of prime-square blocks).
 - `goldbach/visualization_data.py`: computes the data used by the seven
   visualizations and, separately (`parity_data`), by the parity figure.
 - `goldbach/render.py`: draws that data using the styles and layouts defined
@@ -286,14 +295,14 @@ and `tests/test_first_survivor_figures.py`, with brute-force references in
 `tests/first_survivor_brute_force.py`. The tests:
 
 - recompute λ_sieve from the gcd definition with big-integer primorials for
-  every N below 4,000, and over every integer d, with no range limit, for N below
-  2,000;
+  every N below 4,000, and check that the search stops at d = C − 2;
 - recompute λ_sieve, λ_prime and q from a pure-Python least-prime-factor list for
   every even N below 2²⁰, and by trial division on a sample;
 - derive the 22 exceptions and the 13 composite-first cases by brute force;
 - enumerate every surviving offset, for all N below 4,000 and a sample above, to
   check that no composite survivor lies below W;
-- check that a composite survivor sits at d = W exactly when N − q² survives;
+- check, for every N from 122, that a composite survivor sits at d = W exactly
+  when N − q² ≥ 2 has no prime factor below q;
 - check the worked example, the boundary slope and the block transitions;
 - check the dyadic maxima by a plain loop, and the fits (power law, direct q fit
   and polylog) against the normal equations;

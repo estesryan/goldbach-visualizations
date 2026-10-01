@@ -19,7 +19,7 @@ class Sweep:
     q: np.ndarray               # largest prime below √N
     W: np.ndarray               # forcing boundary q² - N/2
     lam_sieve: np.ndarray       # first-survivor offset λ_sieve(N)
-    lam_prime: np.ndarray       # central Goldbach gap λ_prime(N) (OEIS A047160 at N/2)
+    lam_prime: np.ndarray       # nearest Goldbach-pair offset λ_prime(N) (OEIS A047160 at N/2)
     first_prime: np.ndarray     # bool: the first surviving pair is a pair of primes
     first_composite: np.ndarray  # least offset of a surviving pair that is not a prime pair, or -1
     n_composite: np.ndarray     # number of such offsets
@@ -52,8 +52,9 @@ class EnvelopeFit:
     """Fits to the dyadic-bin maxima inside N < 2^K, each bin maximum placed at the
     least N attaining it.
 
-    alpha_N is the fitted exponent: OLS of log λ on log N. alpha_q_direct is a
-    separate OLS of log λ on log q at the same points, kept for comparison only.
+    alpha_N is the fitted exponent: OLS of log λ on log N. The figure's q-unit value
+    2·alpha_N is a conversion via N ≈ q², approximate because q < √N; alpha_q_direct
+    is a separate OLS of log λ on log q at the same points, kept for comparison only.
     beta is the exponent of the alternative λ ≈ B·(log N)^β, fitted the same way.
     """
     cutoff_exp: int             # K
@@ -70,7 +71,8 @@ class EnvelopeFit:
 
 @dataclass(frozen=True)
 class Block:
-    """One complete prime-square block q² < N < r², every even N computed."""
+    """One complete prime-square block q² < N < r², every even N computed. Every N in
+    it has sieve depth q, so W = q² - N/2 falls linearly across it."""
     q: int
     r: int
     n_targets: int
@@ -102,7 +104,7 @@ class FirstSurvivorData:
     exceptions: np.ndarray      # N with λ_sieve >= W
     composite_first: np.ndarray  # of those, N whose first surviving pair is not a prime pair
     prime_outside: np.ndarray   # of those, N whose first surviving pair is a prime pair
-    min_N: int                  # first N after the last exception: λ_sieve < W from here on
+    min_N: int                  # first N after the last exception: λ_sieve < W for min_N <= N < n_max
     n_with_composite: int       # N >= min_N with at least one composite survivor
     max_ratio: float            # largest λ_sieve / W for N >= min_N
     max_ratio_N: int
@@ -205,7 +207,7 @@ def first_survivor_data(example_N, n_max, bin_start_exp=8, fit_cutoff_exps=(14, 
     q = nt.largest_prime_below_sqrt(N, primes)
     W = nt.forcing_boundary(N, q)
     ls = nt.first_survivor_offsets(N, q, spf)
-    lp = nt.central_goldbach_gaps(N, spf)
+    lp = nt.nearest_goldbach_offsets(N, spf)
     if (ls < 0).any() or (lp < 0).any():
         raise ValueError("an offset search found nothing")
     C = N // 2
@@ -244,7 +246,7 @@ def first_survivor_data(example_N, n_max, bin_start_exp=8, fit_cutoff_exps=(14, 
 # ---- exact blocks beyond the main range
 
 def selected_block_qs(targets, primes):
-    """The largest prime <= each target, without repeats, in order."""
+    """The largest prime at or below each target, without repeats, in order."""
     out = []
     for t in targets:
         p = int(primes[np.searchsorted(primes, t, side="right") - 1])
@@ -254,9 +256,11 @@ def selected_block_qs(targets, primes):
 
 
 def exact_blocks(targets):
-    """The complete prime-square block of q = the largest prime <= each target.
-    Every even N in each block is computed; nothing is sampled."""
-    primes = nt.primes_from_spf(nt.spf_table(int(max(targets) * 1.2) + 100))
+    """The complete prime-square block of q = the largest prime at or below each
+    target. Every even N in each block is computed; nothing is sampled."""
+    # Each q <= t = max(targets), and by Bertrand's postulate there is a prime in
+    # (t, 2t), so primes up to 2t include the next prime r after every q.
+    primes = nt.primes_from_spf(nt.spf_table(2 * int(max(targets))))
     blocks = []
     for q in selected_block_qs(targets, primes):
         r = int(primes[np.searchsorted(primes, q) + 1])

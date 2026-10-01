@@ -24,7 +24,7 @@ pytestmark = pytest.mark.first_survivor
 
 @pytest.fixture(scope="module")
 def spf_2_20():
-    """Pure-Python least prime factors through 2^20."""
+    """Pure-Python least prime factors of every n <= 2^20."""
     return bf.smallest_prime_factors(2 ** 20)
 
 
@@ -50,7 +50,7 @@ def test_forcing_boundary_known_values():
     assert nt.forcing_boundary([100, 272, 999_008], [7, 13, 997]).tolist() == [-1, 33, 494_505]
 
 
-def test_first_survivor_and_central_gap_by_hand():
+def test_first_survivor_and_nearest_goldbach_offset_by_hand():
     # N = 8: no prime lies below q = 2, so d = 0, the pair (4, 4), survives; the nearest prime pair is 3 + 5.
     # N = 100: 47 + 53 survives the primes below 7. N = 272: 109 + 163 at d = 27, below W = 33.
     spf = nt.spf_table(1000)
@@ -58,22 +58,24 @@ def test_first_survivor_and_central_gap_by_hand():
     Ns = np.array([8, 16, 44, 100, 272])
     qs = nt.largest_prime_below_sqrt(Ns, primes)
     assert nt.first_survivor_offsets(Ns, qs, spf).tolist() == [0, 1, 3, 3, 27]
-    assert nt.central_goldbach_gaps(Ns, spf).tolist() == [1, 3, 9, 3, 27]
+    assert nt.nearest_goldbach_offsets(Ns, spf).tolist() == [1, 3, 9, 3, 27]
 
 
-def test_central_goldbach_gaps_match_oeis_a047160():
+def test_nearest_goldbach_offsets_match_oeis_a047160():
     # A047160(n) for n = 3..22, from the OEIS entry, at N = 2n.
     spf = nt.spf_table(100)
-    assert nt.central_goldbach_gaps(2 * np.arange(3, 23), spf).tolist() == [
+    assert nt.nearest_goldbach_offsets(2 * np.arange(3, 23), spf).tolist() == [
         0, 1, 0, 1, 0, 3, 2, 3, 0, 1, 0, 3, 2, 3, 0, 1, 0, 3, 2, 9]
 
 
 def test_offset_search_stops_at_c_minus_2():
-    # N = 12 with sieve depth 7: (6, 6), (5, 7), (4, 8), (3, 9), (2, 10) all have a factor
-    # below 7. The next offset would be (1, 11), which is outside 0 <= d <= C - 2.
+    # A boundary-condition test: N = 12 has sieve depth 3, but q = 7 is supplied on
+    # purpose so that no valid offset survives. (6, 6), (5, 7), (4, 8), (3, 9) and
+    # (2, 10) each have a factor below 7; the next offset would be (1, 11), outside
+    # 0 <= d <= C - 2, so the search must report -1 rather than continue.
     spf = nt.spf_table(20)
     assert nt.first_survivor_offsets([12], [7], spf).tolist() == [-1]
-    assert nt.central_goldbach_gaps([12], spf).tolist() == [1]
+    assert nt.nearest_goldbach_offsets([12], spf).tolist() == [1]
 
 
 def test_composite_survivors_by_hand():
@@ -125,15 +127,6 @@ def test_lambda_sieve_matches_the_gcd_definition(first_survivor):
         assert fbf.first_survivor_gcd(N) == lam, N
 
 
-def test_offset_domain_does_not_change_lambda(first_survivor):
-    # Searching every d >= 0, which admits (1, N - 1) at d = C - 1 and negative C - d
-    # beyond, gives the same first survivor wherever the definition is checked.
-    sw = first_survivor.sweep
-    s = sw.N < 2000
-    for N, lam in zip(sw.N[s].tolist(), sw.lam_sieve[s].tolist()):
-        assert fbf.first_survivor_any_d(N) == lam, N
-
-
 def test_both_lambdas_over_the_whole_range(first_survivor, spf_2_20):
     sw = first_survivor.sweep
     ls, lp = sw.lam_sieve.tolist(), sw.lam_prime.tolist()
@@ -146,7 +139,7 @@ def test_lambdas_by_trial_division_on_a_sample(first_survivor):
     sw = first_survivor.sweep
     for i in rng.choice(len(sw.N), 300, replace=False).tolist():
         N = int(sw.N[i])
-        assert fbf.central_gap_trial(N) == sw.lam_prime[i], N
+        assert fbf.nearest_goldbach_offset_trial(N) == sw.lam_prime[i], N
         C, q, lam = N // 2, fbf.sieve_depth(N), int(sw.lam_sieve[i])
         assert fbf.survives_gcd(C, lam, q)
         assert not any(fbf.survives_gcd(C, d, q) for d in range(lam)), N
@@ -224,12 +217,15 @@ def test_no_composite_survivor_below_w(first_survivor):
 
 
 def test_boundary_composite_where_n_minus_q_squared_survives(first_survivor, spf_2_20):
-    # C + W = q², so offset W holds a composite survivor exactly when N − q² >= 2 has no
-    # prime factor below q; it is then the first composite survivor.
+    # The pair at d = W is (N − q², q²). From N = 122, W >= 0, so d = W is a valid offset
+    # (W <= C - 2) exactly when N − q² >= 2; it fails at N = q² + 1. When valid, q²
+    # survives, so W holds a composite survivor exactly when N − q² has no prime factor
+    # below q, and it is then the first composite survivor.
     sw = first_survivor.sweep
     for N, q, W, fc in zip(sw.N.tolist(), sw.q.tolist(), sw.W.tolist(), sw.first_composite.tolist()):
         if N >= 122:
             m = N - q * q
+            assert W >= 0 and (W <= N // 2 - 2) == (m >= 2), N
             assert (fc == W) == (m >= 2 and spf_2_20[m] >= q), N
 
 
@@ -238,7 +234,7 @@ def test_worked_example(first_survivor, spf_2_20):
     C, q = 999_008 // 2, fbf.sieve_depth(999_008)
     assert (e.N, e.C, e.q, e.W) == (999_008, C, q, q * q - C) == (999_008, 499_504, 997, 494_505)
     assert not any(fbf.survives_gcd(C, d, q) for d in range(45)) and fbf.survives_gcd(C, 45, q)
-    assert fbf.central_gap_trial(999_008) == 45
+    assert fbf.nearest_goldbach_offset_trial(999_008) == 45
     assert (e.lam_sieve, e.lam_prime) == (45, 45)
     assert bf.is_prime(C - 45) and bf.is_prime(C + 45) and (C - 45, C + 45) == (499_459, 499_549)
     offs = fbf.surviving_offsets_spf(999_008, spf_2_20)

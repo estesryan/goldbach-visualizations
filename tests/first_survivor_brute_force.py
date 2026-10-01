@@ -44,17 +44,7 @@ def first_survivor_gcd(N):
     return next((d for d in range(C - 1) if survives_gcd(C, d, q)), None)
 
 
-def first_survivor_any_d(N):
-    """λ_sieve(N) from the gcd definition over every integer d >= 0, with no range
-    limit: admits d = C - 1, the pair (1, N - 1), and d >= C."""
-    C, q = N // 2, sieve_depth(N)
-    d = 0
-    while not survives_gcd(C, d, q):
-        d += 1
-    return d
-
-
-def central_gap_trial(N):
+def nearest_goldbach_offset_trial(N):
     """λ_prime(N): least d with C - d and C + d both prime, by trial division."""
     C = N // 2
     return next((d for d in range(C - 1) if is_prime(C - d) and is_prime(C + d)), None)

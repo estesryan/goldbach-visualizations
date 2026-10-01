@@ -259,7 +259,7 @@ def draw_boundary(fig, rect, d, geo, small_max, portrait):
     label_above(small, f"Even N ≤ {small_max}: W falls linearly in each block; {LS} moves in jumps",
                 pad_in=0.48 if not portrait else 0.3)
     large = draw_large(fig, rect, d, geo["large"], geo["colorbar"])
-    label_above(large, f"Every even N from {d.min_N} to {pow2(d.n_max.bit_length() - 1)}")
+    label_above(large, f"Every even N with {d.min_N} ≤ N < {pow2(d.n_max.bit_length() - 1)}")
     return {"small": small, "large": large}
 
 
@@ -316,8 +316,8 @@ def draw_envelope(fig, rect, d, geo):
 # ---- the main figure
 
 INTRO = ("Sieve the symmetric pairs (N/2 − d, N/2 + d) by every prime below q, the largest prime below √N. "
-         "Sieve information alone cannot distinguish primes from products of two sufficiently large primes. "
-         "Below q², no such composite survivor can occur, so a sieve survivor there is prime by size alone. "
+         "Survival alone does not distinguish a prime from a composite whose prime factors are all at least q. "
+         "Below q², no such composite can occur, so a sieve survivor there is prime by size alone. "
          "The forcing boundary W = q² − N/2 is the offset at which N/2 + d reaches q². "
          "The experiment measures where the first survivor lands relative to that forcing boundary.")
 
@@ -346,7 +346,8 @@ def caption(d):
         f"Below {d.min_N} it lies at or beyond W for {len(d.exceptions)} values of N, "
         f"all with {keep(f'q ≤ {last_q}')}, "
         f"and {len(d.composite_first)} of those first survivors are composite.",
-        f"Composite survivors occur for {d.n_with_composite:,} of the {int(big.sum()):,} N from {d.min_N}, "
+        f"Composite survivors occur for {d.n_with_composite:,} of the {int(big.sum()):,} even N from {d.min_N} to "
+        f"{d.n_max - 2:,}, "
         "never below W.",
         f"From {d.min_N} the first-survivor offset is at most {d.max_ratio:.3f}·W (at N = {d.max_ratio_N}).",
         f"The fits describe this finite range only: {growth}",
@@ -408,9 +409,10 @@ def build_blocks_figure(blocks, d):
     fig = plt.figure(figsize=(W, H))
     n_targets = sum(b.n_targets for b in blocks)
     header(fig, "Exact prime-square blocks beyond the main range",
-           f"Each point is one complete block q² < N < r² (r the next prime): every even N in it is computed and "
-           f"the block's largest first-survivor offset is plotted. Inside the main range every block is shown; "
-           f"beyond it, {len(blocks)} blocks are selected by a fixed rule, the largest prime below log-spaced targets.",
+           "Each point is one complete block q² < N < r² (r the next prime), every even N in it computed. "
+           "Inside the main range every block is shown. Beyond it, "
+           f"{len(blocks)} blocks are selected by a fixed rule: q is the largest prime at or below each of a "
+           "list of log-spaced targets.",
            100, tagline=False)
     rect = (0.144, 1.0, W - 0.288, H - 1.0 - 1.45)
     card(fig, rect, "Block maxima of the first-survivor offset", "")

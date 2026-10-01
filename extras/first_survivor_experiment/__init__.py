@@ -5,11 +5,13 @@ For even N = 2C, let q be the largest prime below √N and sieve the symmetric p
 separate:
 
     λ_sieve(N)   the first-survivor offset: the least d whose pair survives
-    λ_prime(N)   the central Goldbach gap: the least d with C - d and C + d both prime
+    λ_prime(N)   the nearest Goldbach-pair offset: the least d with C - d and C + d
+                 both prime (the two primes are 2d apart)
     W(N)         the forcing boundary q² - N/2
 
 A composite n < q² has a prime factor below q, so a survivor with d < W is a pair of
-primes. The experiment measures where the first survivor lands relative to W.
+primes, and is then also the nearest one: any closer pair of primes would survive
+too. The experiment measures where the first survivor lands relative to W.
 
     data.py      computation, fitting and the exact blocks (no plotting)
     layout.py    figure sizes and panel geometry, landscape and portrait separately

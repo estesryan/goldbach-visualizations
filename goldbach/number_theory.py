@@ -215,7 +215,7 @@ def goldbach_smaller_primes(N):
     return p[sieve[N - p]]
 
 
-# ---- symmetric offsets around N/2: first sieve survivor, central Goldbach gap
+# ---- symmetric offsets around N/2: first sieve survivor, nearest Goldbach pair
 #
 # For even N = 2C, q is the largest prime below √N and the pair at offset d is
 # (C - d, C + d). Offsets run over 0 <= d <= C - 2, so both numbers are at least 2;
@@ -291,9 +291,10 @@ def first_survivor_offsets(Ns, qs, spf):
     return _first_offset(Ns // 2, lambda lo, hi, i: (spf[lo] >= qs[i]) & (spf[hi] >= qs[i]))
 
 
-def central_goldbach_gaps(Ns, spf):
-    """λ_prime(N): the least d, 0 <= d <= C - 2, with C - d and C + d both prime
-    (OEIS A047160 at C). -1 if none."""
+def nearest_goldbach_offsets(Ns, spf):
+    """λ_prime(N), the nearest Goldbach-pair offset: the least d, 0 <= d <= C - 2, with
+    C - d and C + d both prime (OEIS A047160 at C). The two primes are 2d apart.
+    -1 if none."""
     Ns = np.asarray(Ns, dtype=np.int64)
     return _first_offset(Ns // 2, lambda lo, hi, i: (spf[lo] == lo) & (spf[hi] == hi))
 
@@ -302,11 +303,15 @@ def composite_survivors(Ns, qs, spf, primes):
     """(first, count): for each N, the least offset of a surviving pair that is not a
     pair of primes, and how many such offsets there are (-1 and 0 if none).
 
-    A composite m < N with no prime factor below q is q·p' with p' a prime >= q: two
-    factors >= r, the next prime, would give m >= r² > N, and three would give
-    m >= q³ >= N. The pair is
-    (m, N - m), at offset |C - m|, and survives if N - m >= 2 has no prime factor
-    below q. Each surviving pair is counted once.
+    Precondition: each q must be the sieve depth of its N, the largest prime below √N,
+    as largest_prime_below_sqrt returns; primes must reach max(N) / q. The reasoning
+    below depends on it and the function does not check it.
+
+    A composite m < N with no prime factor below q is then q·p' with p' a prime >= q:
+    two factors >= r, the next prime after q, would give m >= r² > N, and three
+    factors >= q would give m >= q³ >= N. The pair is (m, N - m), at offset |C - m|,
+    and survives if N - m >= 2 has no prime factor below q. Each surviving pair is
+    counted once.
     """
     Ns, qs = np.asarray(Ns, dtype=np.int64), np.asarray(qs, dtype=np.int64)
     Cs = Ns // 2
