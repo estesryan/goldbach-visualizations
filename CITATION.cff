@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it."
+title: "Goldbach Visualizations"
+type: software
+authors:
+  - family-names: "Estes"
+    given-names: "Ryan S."
+repository-code: "https://github.com/estesryan/goldbach-visualizations"
+url: "https://github.com/estesryan/goldbach-visualizations"
+license: MIT
