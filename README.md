@@ -1,11 +1,11 @@
 # Goldbach Visualizations
 
-![Seven computed views of primes and Goldbach's conjecture](images/landscape.png)
+![Seven computed views of primes and Goldbach's conjecture](images/poster-landscape.png)
 
 > Computational visualizations exploring primes, residue structure, sieving,
 > and Goldbach's conjecture, with independent cross-checks of the plotted data.
 
-`generate_visualizations.py` draws seven panels from settings at the top of the
+`generate_poster.py` draws seven panels from settings at the top of the
 file. Every plotted point, count and number-bearing label is computed at run
 time. The worked example is N = 100.
 
@@ -278,12 +278,14 @@ these finite ranges only and do not establish an asymptotic growth law.
 
 ## Code layout
 
-- `generate_visualizations.py`: settings and image generation for the poster.
-- `extras/generate_parity_visualization.py`: settings and image generation for
-  the optional parity figure. The poster script does not use it.
+- `generate_poster.py`: settings and image generation for the poster.
+- `extras/parity/`: the optional parity visualization, kept self-contained:
+  `data.py` (the sieve sums and sign splits), `layout.py` (figure sizes and the
+  three cards), `render.py` (the figure and its text) and `generate.py` (settings
+  and image generation). The poster does not use it.
 - `extras/first_survivor_experiment/`: the first-survivor experiment, kept
   self-contained: `data.py` (computation, fits and exact blocks), `layout.py`
-  (landscape and portrait geometry), `render.py` (figures, colour roles,
+  (landscape and 4:5 geometry), `render.py` (figures, colour roles,
   captions), `framework.py` (the framework figure: its own data, layout and
   drawing) and `generate.py` (settings and image generation). The poster and the
   parity figure do not use it.
@@ -293,9 +295,10 @@ these finite ranges only and do not establish an asymptotic growth law.
   factors, sieve depth q, forcing boundary, first-survivor and nearest
   Goldbach-pair offset searches, composite survivors, segmented sieving of prime-square blocks).
 - `goldbach/visualization_data.py`: computes the data used by the seven
-  visualizations and, separately (`parity_data`), by the parity figure.
+  visualizations of the poster.
 - `goldbach/render.py`: draws that data using the styles and layouts defined
-  alongside it in `goldbach/style.py` and `goldbach/layout.py`.
+  alongside it in `goldbach/style.py` and `goldbach/layout.py`. Its `style_axes`
+  and `card` helpers and the palette in `style.py` are shared with the extras.
 - `tests/`: mathematical tests, independent cross-checks, and figure tests.
 
 ## Tests
@@ -314,8 +317,9 @@ and read the drawn bars, points, cells, arrays and labels back from the figure.
 They check that these match the computed data, that only palette colours are
 used, and that text meets a minimum contrast.
 
-The parity figure's tests are marked `parity` (`python -m pytest -m parity`);
-run them before regenerating its images.
+The parity visualization's tests are marked `parity` (`python -m pytest -m parity`);
+run them before regenerating its images. They live in
+`tests/test_parity_visualization.py` and `tests/test_parity_figures.py`.
 They recompute λ by smallest-prime-factor recursion over the whole range and
 by trial division on a sample, recount M_z and S_z at every plotted level from
 least prime factors without sieving, check that every endpoint survivor is a
@@ -354,13 +358,13 @@ are not a proof of Goldbach's conjecture.
 
 ```
 pip install -r requirements.txt
-python generate_visualizations.py
+python generate_poster.py
 ```
 
-The parity figure is optional and only generated when run explicitly:
+The parity visualization is optional and only generated when run explicitly:
 
 ```
-python extras/generate_parity_visualization.py
+python -m extras.parity.generate
 ```
 
 It runs quick checks on the data it is about to draw and saves nothing if they
@@ -387,17 +391,14 @@ Requires Python 3.8 or later. Tested with Python 3.12.10, matplotlib 3.9.3 and n
 
 ## Outputs
 
-- `images/landscape.png`: 3600 × 2400
-- `images/linkedin-4x5.png`: 2160 × 2700
-- `images/extras/parity-landscape.png`: 3200 × 1800 (optional parity figure)
-- `images/extras/parity-linkedin-4x5.png`: 2160 × 2700 (optional parity figure)
+- `images/poster-landscape.png`: 3600 × 2400
+- `images/poster-preview-4x5.png`: 2160 × 2700
+- `images/extras/parity-landscape.png`: 3200 × 1800 (optional parity visualization)
+- `images/extras/parity-preview-4x5.png`: 2160 × 2700 (optional parity visualization)
 - `images/extras/first-survivor-framework.png`: 3200 × 1800 (optional first-survivor experiment)
 - `images/extras/first-survivor-landscape.png`: 3200 × 1800 (optional first-survivor experiment)
-- `images/extras/first-survivor-linkedin-4x5.png`: 2160 × 2700 (optional first-survivor experiment)
+- `images/extras/first-survivor-preview-4x5.png`: 2160 × 2700 (optional first-survivor experiment)
 - `images/extras/first-survivor-blocks.png`: 2000 × 1600 (optional, with `--blocks`)
-
-The poster script also writes smaller preview images (`images/*-preview.png`).
-These are generated outputs and are ignored by Git.
 
 ## License
 

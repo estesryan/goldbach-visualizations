@@ -11,6 +11,7 @@ import matplotlib
 import numpy as np
 import pytest
 
+from figure_test_helpers import written_files
 from goldbach import layout, style
 from goldbach.visualization_data import build_visualization_data
 
@@ -28,8 +29,8 @@ def test_importing_modules_does_not_change_rcparams():
         "before = matplotlib.rcParams.copy()\n"
         "import goldbach.number_theory, goldbach.visualization_data\n"
         "import goldbach.style, goldbach.layout\n"
-        "import goldbach.render, generate_visualizations\n"
-        "from extras import generate_parity_visualization\n"
+        "import goldbach.render, generate_poster\n"
+        "import extras.parity.generate\n"
         "assert matplotlib.rcParams == before\n"
         "goldbach.style.apply_style()\n"
         "assert matplotlib.rcParams != before\n"
@@ -74,7 +75,7 @@ EXPECTED_RECTS = {
                   3: (12.06, 7.86, 5.796, 3.66), 4: (0.144, 4.02, 7.2, 3.744),
                   5: (7.434, 4.02, 10.422, 3.744), 6: (0.144, 0.096, 7.92, 3.828),
                   7: (8.154, 0.096, 9.702, 3.828)},
-    "linkedin_4x5": {1: (0.144, 15.151333333333, 7.911, 4.618666666667),
+    "preview_4x5": {1: (0.144, 15.151333333333, 7.911, 4.618666666667),
                      2: (8.145, 15.151333333333, 7.911, 4.618666666667),
                      3: (0.144, 10.442666666667, 7.911, 4.618666666667),
                      4: (8.145, 10.442666666667, 7.911, 4.618666666667),
@@ -85,10 +86,10 @@ EXPECTED_RECTS = {
 
 
 def test_figure_sizes():
-    assert layout.FIGURE_SIZES == {"landscape": (18.0, 12.0), "linkedin_4x5": (16.2, 20.25)}
+    assert layout.FIGURE_SIZES == {"landscape": (18.0, 12.0), "preview_4x5": (16.2, 20.25)}
 
 
-@pytest.mark.parametrize("name", ["landscape", "linkedin_4x5"])
+@pytest.mark.parametrize("name", ["landscape", "preview_4x5"])
 def test_panel_rects(name):
     rects = layout.LAYOUTS[name]
     assert set(rects) == set(range(1, 8))
@@ -118,19 +119,19 @@ def test_portrait_mapping_maps_the_content_area(num):
     # The content area (below the HDR_IN header) of the landscape panel maps onto
     # the content area of the portrait panel. The header itself is placed by
     # render.panel() in inches, not through this mapping.
-    cv = _canvas("linkedin_4x5", num)
-    W, H = layout.FIGURE_SIZES["linkedin_4x5"]
+    cv = _canvas("preview_4x5", num)
+    W, H = layout.FIGURE_SIZES["preview_4x5"]
     lx, ly, lw, lh = layout._in(layout.LAND_RECTS[num], layout.LAND)
-    nx, ny, nw, nh = layout.LAYOUTS["linkedin_4x5"][num]
+    nx, ny, nw, nh = layout.LAYOUTS["preview_4x5"][num]
     header_bottom = (ly + lh - layout.HDR_IN) / layout.LAND[1]
     assert cv.point(lx / layout.LAND[0], header_bottom) == pytest.approx((nx / W, (ny + nh - layout.HDR_IN) / H))
     assert cv.point((lx + lw) / layout.LAND[0], ly / layout.LAND[1]) == pytest.approx(((nx + nw) / W, ny / H))
 
 
 @pytest.mark.parametrize("name, num, pt, sz, expected_pt, expected_sz", [
-    ("linkedin_4x5", 5, (0.5, 0.45), (0.1, 0.05),
+    ("preview_4x5", 5, (0.5, 0.45), (0.1, 0.05),
      (0.15647668393782393, 0.34986341615877486), (0.169641143734408, 0.04792415481585664)),
-    ("linkedin_4x5", 2, (0.528, 0.862), (0.175, 0.21),
+    ("preview_4x5", 2, (0.528, 0.862), (0.175, 0.21),
      (0.7858912747102932, 0.9134880658436213), (0.262142126789366, 0.16766935050993023)),
     ("landscape", 5, (0.5, 0.45), (0.1, 0.05), (0.5, 0.45), (0.1, 0.05000000000000001)),
 ])
@@ -142,7 +143,7 @@ def test_mapping_matches_the_original_implementation(name, num, pt, sz, expected
     assert cv.size(*sz) == expected_sz
 
 
-@pytest.mark.parametrize("name", ["landscape", "linkedin_4x5"])
+@pytest.mark.parametrize("name", ["landscape", "preview_4x5"])
 def test_size_agrees_with_point(name):
     cv = _canvas(name, 5)
     x0, y0 = cv.point(0.5, 0.4)
@@ -157,7 +158,7 @@ def test_both_layouts_build_from_the_same_data(figures):
     for name, (fig, _) in figs.items():
         assert tuple(fig.get_size_inches()) == layout.FIGURE_SIZES[name]
     # Same data, same drawn content: both layouts have the same artists per axes.
-    (fa, ha), (fb, hb) = figs["landscape"], figs["linkedin_4x5"]
+    (fa, ha), (fb, hb) = figs["landscape"], figs["preview_4x5"]
     # 2 + 1 + 2 + 2 + 2 + 2 + 3 (panel 7 heatmap, actual row, colorbar) axes.
     assert len(fa.axes) == len(fb.axes) == 14
     assert [len(t.get_text()) for t in fa.texts] == [len(t.get_text()) for t in fb.texts]
@@ -165,7 +166,7 @@ def test_both_layouts_build_from_the_same_data(figures):
 
 
 def test_build_figure_does_not_change_the_data(figures, default_data):
-    import generate_visualizations as gv
+    import generate_poster as gv
     data = default_data
     fresh = build_visualization_data(gv.EXAMPLE_N, gv.WHEEL_MODULUS, gv.CRT_MODULI,
                                      gv.HEATMAP_MAX, gv.SIEVE_PRIMES, gv.COMET_MAX)
@@ -184,79 +185,23 @@ def test_build_figure_returns_named_axes(figures):
                 assert ax.figure is fig, key
 
 
-# ---- the parity figure (optional extra) and its generator
+# ---- the poster generator
 
-PARITY_OUTPUTS = {"images/extras/parity-landscape.png": (3200, 1800),
-                  "images/extras/parity-linkedin-4x5.png": (2160, 2700)}
-POSTER_OUTPUTS = {"images/landscape.png", "images/landscape-preview.png",
-                  "images/linkedin-4x5.png", "images/linkedin-4x5-preview.png"}
-
-
-def written_files(root):
-    return {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()}
+POSTER_OUTPUTS = {"images/poster-landscape.png", "images/poster-preview-4x5.png"}
 
 
 def test_poster_generator_is_independent_of_the_parity_extra(tmp_path, monkeypatch):
-    # generate_visualizations.py knows nothing of the extra and writes only the poster.
+    # generate_poster.py knows nothing of the extra and writes only the poster.
     import inspect
-    import generate_visualizations as gv
+    import generate_poster as gv
     source = inspect.getsource(gv).lower()
     assert "parity" not in source and "extras" not in source
-    assert gv.EXPORTS == {"landscape": (3600, 1200), "linkedin_4x5": (2160, 1080)}
-    assert set(layout.FIGURE_SIZES) == set(layout.LAYOUTS) == {"landscape", "linkedin_4x5"}
+    assert gv.EXPORTS == {"landscape": ("images/poster-landscape.png", 3600),
+                          "preview_4x5": ("images/poster-preview-4x5.png", 2160)}
+    assert set(layout.FIGURE_SIZES) == set(layout.LAYOUTS) == {"landscape", "preview_4x5"}
     monkeypatch.chdir(tmp_path)
     with matplotlib.rc_context():
         gv.main()
     assert written_files(tmp_path) == POSTER_OUTPUTS
 
 
-@pytest.mark.parity
-def test_parity_figure_sizes_and_cards():
-    assert layout.PARITY_FIGURE_SIZES == {"landscape": (16.0, 9.0), "linkedin_4x5": (16.2, 20.25)}
-    for name, (W, H) in layout.PARITY_FIGURE_SIZES.items():
-        cards = layout.PARITY_LAYOUTS[name]
-        for x, y, w, h in cards.values():
-            assert 0 <= x and x + w <= W + 1e-9 and 0 <= y and y + h <= H + 1e-9, name
-        assert list(cards) == ["average", "sums", "classes"]
-        (ax_, ay, aw, ah), (sx, sy, sw, sh), (cx, cy, cw, ch) = cards.values()
-        if name == "landscape":
-            assert ay == sy == cy and ax_ + aw < sx and sx + sw < cx     # side by side, in order
-        else:
-            assert ax_ == sx == cx and cy + ch < sy and sy + sh < ay     # stacked, average on top
-        assert (aw, ah) == pytest.approx((sw, sh)) and (cw, ch) == pytest.approx((sw, sh))   # same size
-
-
-@pytest.mark.parity
-def test_parity_figure_axes(parity_figures):
-    for name, (fig, axes) in parity_figures.items():
-        assert tuple(fig.get_size_inches()) == layout.PARITY_FIGURE_SIZES[name]
-        assert set(axes) == {"average", "sums", "classes"} and len(fig.axes) == 3
-        for ax in axes.values():
-            assert ax.figure is fig
-        assert axes["average"].get_xscale() == axes["sums"].get_xscale() == "log"
-        assert axes["sums"].get_yscale() == "symlog"
-        assert axes["classes"].get_xlim() == (0, 1)
-    # Same data, same drawn text in both layouts.
-    (fa, _), (fb, _) = parity_figures.values()
-    assert [t.get_text() for t in fa.texts] == [t.get_text() for t in fb.texts]
-
-
-@pytest.mark.parity
-def test_parity_generator_data_checks_pass(parity):
-    from extras import generate_parity_visualization as gp
-    checks = gp.sanity_checks(parity)
-    assert checks and all(ok for _, ok in checks), [d for d, ok in checks if not ok]
-
-
-@pytest.mark.parity
-def test_parity_generator_outputs(tmp_path):
-    # Run as documented, as a script by path, with outputs relative to the working
-    # directory (here a temporary one): both layouts at the export sizes, nothing else.
-    from PIL import Image
-    r = subprocess.run([sys.executable, str(REPO / "extras" / "generate_parity_visualization.py")],
-                       cwd=tmp_path, capture_output=True, text=True)
-    assert r.returncode == 0, r.stderr
-    assert written_files(tmp_path) == set(PARITY_OUTPUTS)
-    for path, size in PARITY_OUTPUTS.items():
-        with Image.open(tmp_path / path) as im:
-            assert im.size == size, path

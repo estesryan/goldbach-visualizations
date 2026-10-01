@@ -6,7 +6,7 @@ would alter the rendered figure shows up here first.
 import numpy as np
 import pytest
 
-import generate_visualizations as gv
+import generate_poster as gv
 from goldbach import visualization_data as vd
 
 
@@ -204,68 +204,6 @@ def test_sieve_streak_claim_mod_3(sieve_data):
     by3 = [c for n, c in zip(sieve_data.Ns, last_z) if n % 3 == 0 and n > 200]
     no3 = [c for n, c in zip(sieve_data.Ns, last_z) if n % 3 and n > 200]
     assert np.mean(by3) > np.mean(no3)
-
-
-# ---- beyond the poster: the parity figure (data from the `parity` fixture, conftest.py)
-
-@pytest.mark.parity
-def test_parity_default_settings():
-    from extras import generate_parity_visualization as gp
-    assert gp.PARITY_NS == (999_000, 999_998, 1_000_000)
-    assert gp.SPLIT_LEVELS == (7, 31)
-
-
-@pytest.mark.parity
-def test_parity_known_values(parity):
-    assert list(parity.sweeps) == [999_000, 999_998, 1_000_000] and parity.featured == 1_000_000
-    endpoint = {N: (len(sw.zs), int(sw.zs[-1]), int(sw.M[-1]), int(sw.S[-1])) for N, sw in parity.sweeps.items()}
-    assert endpoint == {999_000: (168, 997, 11_083, 11_083), 999_998: (168, 997, 4_191, 4_191),
-                        1_000_000: (168, 997, 5_382, 5_382)}
-    sw = parity.sweeps[1_000_000]
-    assert (sw.M[0], sw.S[0]) == (249_999, -347)
-    assert (parity.goldbach_total, parity.goldbach_small) == (5_402, 20)
-    assert parity.meet_level == 983
-    assert parity.class_splits == (vd.ClassSplit("all", None, 249_778, 250_221),
-                                   vd.ClassSplit("survivors", 7, 23_924, 23_695),
-                                   vd.ClassSplit("survivors", 31, 10_458, 10_222),
-                                   vd.ClassSplit("goldbach", None, 5_402, 0))
-
-
-@pytest.mark.parity
-def test_parity_split_level_must_be_a_sieve_level():
-    with pytest.raises(ValueError):
-        vd.parity_data((1_000,), (8,))
-
-
-@pytest.mark.parity
-def test_parity_invariants(parity):
-    for N, sw in parity.sweeps.items():
-        assert np.all(np.diff(sw.M) <= 0), N                    # sieving more never adds survivors
-        assert np.all(np.abs(sw.S) <= sw.M), N                  # each term is ±1
-        assert np.all((sw.M - sw.S) % 2 == 0), N                # so S ≡ M (mod 2)
-        assert sw.S[-1] == sw.M[-1], N                          # at the last level every term is +1
-        assert np.array_equal(sw.average, sw.S / sw.M), N
-    assert parity.goldbach_total - parity.goldbach_small == parity.sweeps[parity.featured].M[-1]
-
-
-@pytest.mark.parity
-def test_parity_dtypes(parity):
-    for sw in parity.sweeps.values():
-        assert sw.zs.dtype == np.int64 and sw.M.dtype == np.int64 and sw.S.dtype == np.int64
-        assert sw.average.dtype == np.float64
-
-
-@pytest.mark.parity
-def test_parity_data_needs_even_n():
-    with pytest.raises(ValueError):
-        vd.parity_data((1001,))
-
-
-@pytest.mark.parity
-def test_parity_data_is_not_part_of_the_poster():
-    import dataclasses
-    fields = {f.name for f in dataclasses.fields(vd.VisualizationData)}
-    assert len(fields) == 7 and not any("parity" in f for f in fields)
 
 
 # ---- all visualizations

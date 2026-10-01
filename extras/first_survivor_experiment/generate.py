@@ -7,7 +7,7 @@ Run from the repository root:
 
   ->  images/extras/first-survivor-framework.png      3200 x 1800 (16:9)
   ->  images/extras/first-survivor-landscape.png      3200 x 1800 (16:9)
-  ->  images/extras/first-survivor-linkedin-4x5.png   2160 x 2700 (4:5)
+  ->  images/extras/first-survivor-preview-4x5.png    2160 x 2700 (4:5)
   ->  images/extras/first-survivor-blocks.png         2000 x 1600 (with --blocks)
 
 Runs quick checks on the data it is about to draw and saves nothing if they fail.

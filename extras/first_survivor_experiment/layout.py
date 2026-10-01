@@ -9,9 +9,9 @@ overview strip, and panels B and C put their charts side by side.
 
 FIGURE_SIZES = {
     "landscape": (16.0, 9.0),           # 16:9, 3200 x 1800 px
-    "linkedin_4x5": (16.2, 20.25),      # 4:5, 2160 x 2700 px, as the poster's portrait
+    "preview_4x5": (16.2, 20.25),       # 4:5, 2160 x 2700 px, as the poster
 }
-EXPORT_WIDTH_PX = {"landscape": 3200, "linkedin_4x5": 2160}
+EXPORT_WIDTH_PX = {"landscape": 3200, "preview_4x5": 2160}
 
 BLOCKS_SIZE = (10.0, 8.0)               # the appendix figure
 BLOCKS_WIDTH_PX = 2000
@@ -19,11 +19,11 @@ BLOCKS_WIDTH_PX = 2000
 MARGIN, GAP = 0.144, 0.09
 TEXT_X = 0.216                          # left edge of header and footer text
 
-HEADER_IN = {"landscape": 1.42, "linkedin_4x5": 1.62}
-FOOTER_IN = {"landscape": 1.12, "linkedin_4x5": 1.12}
+HEADER_IN = {"landscape": 1.42, "preview_4x5": 1.62}
+FOOTER_IN = {"landscape": 1.12, "preview_4x5": 1.12}
 # Characters per line of the header (body size) and footer (small size) text.
-HEADER_WRAP = {"landscape": 196, "linkedin_4x5": 198}
-FOOTER_WRAP = {"landscape": 220, "linkedin_4x5": 222}
+HEADER_WRAP = {"landscape": 196, "preview_4x5": 198}
+FOOTER_WRAP = {"landscape": 220, "preview_4x5": 222}
 
 
 def cards(name):
