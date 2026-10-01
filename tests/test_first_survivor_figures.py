@@ -95,7 +95,20 @@ def test_small_view_shows_blocks_and_points(figure, first_survivor):
     assert points(ax, "exception", hollow=False) == rounded(zip(N[comp], lam[comp]))
     assert points(ax, "exception", hollow=True) == rounded(zip(N[out], lam[out]))
     ann = {t.get_text() for t in ax.texts if hasattr(t, "xy")}
-    assert ann == {"N = 100: λ = 3 ≥ W = −1", "N = 272: λ = 27 < W = 33"}
+    assert ann == {r"N = 100: $\lambda_{\mathrm{sieve}}$ = 3 ≥ W = −1", r"N = 272: $\lambda_{\mathrm{sieve}}$ = 27 < W = 33"}
+    assert_resets(ax, N, q, W)
+
+
+def assert_resets(ax, N, q, W):
+    """The resets at each q² are one dotted line, not part of W, joining the end of
+    each block's segment to the start of the next."""
+    (resets,) = [ln for ln in ax.lines if ln.get_gid() is None and ln.get_color() == col("MUTED")]
+    assert resets.is_dashed()
+    cuts = np.flatnonzero(np.diff(q)) + 1
+    x, y = resets.get_xdata().reshape(-1, 3), resets.get_ydata().reshape(-1, 3)
+    assert np.array_equal(x[:, :2], np.column_stack([N[cuts - 1], N[cuts]]))
+    assert np.array_equal(y[:, :2], np.column_stack([W[cuts - 1], W[cuts]]))
+    assert np.isnan(x[:, 2]).all()
 
 
 def test_large_view_shows_the_distribution_and_w(figure, first_survivor):
@@ -106,8 +119,12 @@ def test_large_view_shows_the_distribution_and_w(figure, first_survivor):
     assert np.allclose(mesh.get_array().filled(0).reshape(d.histogram.share.shape), d.histogram.share)
     sw = d.sweep
     s = sw.N >= d.min_N
-    (w,) = lines_with(ax, "boundary")
-    assert np.array_equal(w.get_xdata(), sw.N[s]) and np.array_equal(w.get_ydata(), sw.W[s])
+    N, q, W = sw.N[s], sw.q[s], sw.W[s]
+    segs = lines_with(ax, "boundary")
+    assert len(segs) == len(np.unique(q))                            # W broken at every reset
+    for seg, qq in zip(segs, np.unique(q)):
+        assert np.array_equal(seg.get_xdata(), N[q == qq]) and np.array_equal(seg.get_ydata(), W[q == qq])
+    assert_resets(ax, N, q, W)
     assert ax.get_yscale() == "symlog" and ax.get_xscale() == "log"
     assert ax.get_ylim()[0] < 0                                       # the λ = 0 row is on the axes
 
