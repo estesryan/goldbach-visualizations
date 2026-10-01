@@ -68,10 +68,10 @@ def test_portrait_is_its_own_layout(first_survivor_figures):
     # Portrait: the two zooms side by side above the overview. Landscape: stacked.
     def pos(name, key):
         return first_survivor_figures[name][1][key].get_position()
-    assert pos("linkedin_4x5", "example_edge").x0 > pos("linkedin_4x5", "example_centre").x1
-    assert pos("linkedin_4x5", "example_edge").y0 > pos("linkedin_4x5", "example_overview").y1
+    assert pos("preview_4x5", "example_edge").x0 > pos("preview_4x5", "example_centre").x1
+    assert pos("preview_4x5", "example_edge").y0 > pos("preview_4x5", "example_overview").y1
     assert pos("landscape", "example_edge").y1 < pos("landscape", "example_overview").y0
-    assert pos("linkedin_4x5", "large").x0 > pos("linkedin_4x5", "small").x1
+    assert pos("preview_4x5", "large").x0 > pos("preview_4x5", "small").x1
     assert pos("landscape", "large").y1 < pos("landscape", "small").y0
 
 

@@ -10,35 +10,10 @@ from matplotlib.patches import Rectangle
 # Figure size in inches. Every rectangle below is designed for these sizes.
 FIGURE_SIZES = {
     "landscape": (18.0, 12.0),          # 3:2
-    "linkedin_4x5": (16.2, 20.25),      # 4:5, LinkedIn portrait 1080 x 1350
+    "preview_4x5": (16.2, 20.25),       # 4:5, exported at 2160 x 2700 px
 }
 LAND = FIGURE_SIZES["landscape"]
 
-# The parity figure ("beyond the poster") is separate from the poster, in the same
-# two layouts. Sizes in inches; the portrait size is the poster's.
-PARITY_FIGURE_SIZES = {
-    "landscape": (16.0, 9.0),           # 16:9
-    "linkedin_4x5": FIGURE_SIZES["linkedin_4x5"],
-}
-PARITY_HEADER_IN = 1.40     # title and introduction, above the cards
-PARITY_FOOTER_IN = 1.30     # caption, below the cards
-
-
-def parity_cards(W, H):
-    """The three cards (x, y, w, h) in inches: "average" (S/M for each N), "sums"
-    (M and S for the featured N) and "classes" (sign splits of groups of pairs).
-    Side by side in landscape, stacked in portrait."""
-    m, g = 0.144, 0.09
-    y0, h = PARITY_FOOTER_IN, H - PARITY_HEADER_IN - PARITY_FOOTER_IN
-    names = ("average", "sums", "classes")
-    if W > H:
-        w = (W - 2 * m - 2 * g) / 3
-        return {k: (m + i * (w + g), y0, w, h) for i, k in enumerate(names)}
-    h = (h - 2 * g) / 3
-    return {k: (m, y0 + (2 - i) * (h + g), W - 2 * m, h) for i, k in enumerate(names)}
-
-
-PARITY_LAYOUTS = {name: parity_cards(*size) for name, size in PARITY_FIGURE_SIZES.items()}
 LAND_RECTS = {1: (0.008, 0.655, 0.326, 0.305), 2: (0.339, 0.655, 0.326, 0.305),
               3: (0.670, 0.655, 0.322, 0.305), 4: (0.008, 0.335, 0.40, 0.312),
               5: (0.413, 0.335, 0.579, 0.312), 6: (0.008, 0.008, 0.44, 0.319),
@@ -73,7 +48,7 @@ def portrait_rects(W, H):
 # Layout name -> panel number -> (x, y, w, h) in inches.
 LAYOUTS = {
     "landscape": {k: _in(v, LAND) for k, v in LAND_RECTS.items()},
-    "linkedin_4x5": portrait_rects(*FIGURE_SIZES["linkedin_4x5"]),
+    "preview_4x5": portrait_rects(*FIGURE_SIZES["preview_4x5"]),
 }
 
 

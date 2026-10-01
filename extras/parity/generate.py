@@ -1,50 +1,33 @@
-"""
-Optional extra, beyond the poster: what the sieve can't see.
+"""Settings and image generation for the parity visualization.
 
-For even N and sieve level z, a pair (a, N - a) with 2 <= a <= N/2 survives if
-neither a nor N - a has a prime factor <= z. The figure plots, against z,
+Run from the repository root:
 
-    M(z) = number of surviving pairs
-    S(z) = sum over the survivors of λ(a)·λ(N - a),   λ(n) = (-1)^Ω(n),
+    python -m extras.parity.generate
 
-and splits groups of pairs (all pairs, survivors at SPLIT_LEVELS, Goldbach pairs)
-by the sign of λ(a)·λ(N - a).
-
-The mathematics is in goldbach/number_theory.py and visualization_data.py; the
-drawing is in render.py, with layout.py. This script runs a few quick checks on
-the data it is about to draw and saves nothing if they fail. The independent
-verification is the test suite: python -m pytest -m parity. Nothing here proves
-Goldbach's conjecture.
-
-Run from the repository root:  python extras/generate_parity_visualization.py
   ->  images/extras/parity-landscape.png       3200 x 1800 (16:9)
-  ->  images/extras/parity-linkedin-4x5.png    2160 x 2700 (4:5)
+  ->  images/extras/parity-preview-4x5.png     2160 x 2700 (4:5)
+
+Runs a few quick checks on the data it is about to draw and saves nothing if they
+fail. The independent verification is the test suite: python -m pytest -m parity.
 """
 import os
 import sys
 from math import isqrt
 
-# Run as a script, this file's folder comes first on sys.path; the goldbach package is one level up.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import matplotlib.pyplot as plt
+import numpy as np
 
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
+from goldbach import number_theory as nt
+from goldbach.style import apply_style
 
-from goldbach import number_theory as nt  # noqa: E402
-from goldbach.layout import PARITY_FIGURE_SIZES  # noqa: E402
-from goldbach.render import build_parity_figure  # noqa: E402
-from goldbach.style import apply_style  # noqa: E402
-from goldbach.visualization_data import parity_data  # noqa: E402
+from .data import parity_data
+from .layout import EXPORT_WIDTH_PX, FIGURE_SIZES
+from .render import build_figure
 
 # ================================================================ settings
 PARITY_NS = (999_000, 999_998, 1_000_000)   # even N; the M and S panel shows the last
 SPLIT_LEVELS = (7, 31)                      # sieve levels whose survivors the sign-split panel shows
 OUT_DIR = "images/extras"
-# name -> full-size px width; figure sizes are in layout.py
-EXPORTS = {
-    "landscape": 3200,
-    "linkedin_4x5": 2160,
-}
 
 
 def sanity_checks(d):
@@ -77,10 +60,10 @@ def sanity_checks(d):
 
 def save(name, data):
     """Render one layout and save it."""
-    W = PARITY_FIGURE_SIZES[name][0]
-    fig, _ = build_parity_figure(name, data)
+    W = FIGURE_SIZES[name][0]
+    fig, _ = build_figure(name, data)
     out = f"{OUT_DIR}/parity-{name.replace('_', '-')}.png"
-    fig.savefig(out, dpi=EXPORTS[name] / W)
+    fig.savefig(out, dpi=EXPORT_WIDTH_PX[name] / W)
     plt.close(fig)
     print(f"saved {out}")
 
@@ -95,7 +78,7 @@ def main():
     if bad:
         raise SystemExit("data check(s) failed; nothing saved:\n  " + "\n  ".join(bad))
     os.makedirs(OUT_DIR, exist_ok=True)
-    for name in EXPORTS:
+    for name in EXPORT_WIDTH_PX:
         save(name, data)
 
 

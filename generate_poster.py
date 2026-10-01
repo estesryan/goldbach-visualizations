@@ -9,10 +9,9 @@ drawing is in render.py, with style.py and layout.py. The tests in tests/ check
 the mathematics and that the figures show the computed data (python -m pytest).
 Nothing here proves Goldbach's conjecture.
 
-Run:  python generate_visualizations.py
-  ->  images/landscape.png                     3600 x 2400 (3:2)
-  ->  images/linkedin-4x5.png                  2160 x 2700 (4:5)
-  ->  images/*-preview.png                     1200 / 1080 px wide
+Run:  python generate_poster.py
+  ->  images/poster-landscape.png              3600 x 2400 (3:2)
+  ->  images/poster-preview-4x5.png            2160 x 2700 (4:5)
 """
 import os
 
@@ -30,24 +29,20 @@ CRT_MODULI = (3, 5, 7)    # moduli of the residue space (panels 4, 5)
 HEATMAP_MAX = 1000        # largest N in the heatmap (panel 7)
 SIEVE_PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23]   # sieve levels z (panel 7)
 COMET_MAX = 2000          # largest N in the Goldbach comet (panel 5)
-# name -> (full-size px width, preview px width); figure sizes are in layout.py
+# name -> (output path, px width); figure sizes are in layout.py
 EXPORTS = {
-    "landscape": (3600, 1200),
-    "linkedin_4x5": (2160, 1080),
+    "landscape": ("images/poster-landscape.png", 3600),
+    "preview_4x5": ("images/poster-preview-4x5.png", 2160),
 }
 
 
 def save(name, data):
-    """Render one layout and save the full-size and preview PNGs."""
-    full_w, prev_w = EXPORTS[name]
-    W = FIGURE_SIZES[name][0]
+    """Render one layout and save its PNG."""
+    out, width = EXPORTS[name]
     fig, _ = build_figure(name, data)
-    out = f"images/{name.replace('_', '-')}.png"
-    preview = out.replace(".png", "-preview.png")
-    fig.savefig(out, dpi=full_w / W)
-    fig.savefig(preview, dpi=prev_w / W)
+    fig.savefig(out, dpi=width / FIGURE_SIZES[name][0])
     plt.close(fig)
-    print(f"saved {out} and {preview}")
+    print(f"saved {out}")
 
 
 def main():

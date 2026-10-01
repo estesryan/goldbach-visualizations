@@ -3,6 +3,8 @@
 They read drawn artists back from a matplotlib figure: text, scatter offsets, the
 colours each artist draws with, and text contrast.
 """
+from collections import defaultdict
+
 import matplotlib
 import numpy as np
 from matplotlib.collections import Collection
@@ -10,7 +12,7 @@ from matplotlib.colors import to_hex, to_rgba
 from matplotlib.lines import Line2D
 from matplotlib.text import Text
 
-from goldbach.style import C, PALETTE, contrast
+from goldbach.style import C, PALETTE, SEMANTIC, contrast
 
 MIN_TEXT_CONTRAST = 4.5     # WCAG AA
 
@@ -67,6 +69,18 @@ def stray_colours(fig):
             for c in artist_colours(a) if c.lower() not in allowed]
 
 
+def assert_semantic_roles(fig):
+    role_cols = defaultdict(set)
+    for a in fig.findobj():
+        if a.get_visible() and a.get_gid() in SEMANTIC:
+            role_cols[a.get_gid()] |= {c.lower() for c in artist_colours(a)}
+    assert role_cols
+    for role, cols in role_cols.items():
+        assert C(role).lower() in cols, role
+        # Only the role's own colour, plus the panel fill and border used as edges.
+        assert cols <= {C(role).lower(), C("PANEL_BG").lower(), C("BORDER").lower()}, role
+
+
 def low_contrast_text(fig, background=lambda t: C("PANEL_BG")):
     """Visible text below MIN_TEXT_CONTRAST against its background (PANEL_BG by default)."""
     low = []
@@ -77,3 +91,7 @@ def low_contrast_text(fig, background=lambda t: C("PANEL_BG")):
         if contrast(t.get_color(), bg) < MIN_TEXT_CONTRAST:
             low.append((t.get_text()[:30], round(contrast(t.get_color(), bg), 2)))
     return low
+
+
+def written_files(root):
+    return {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()}
