@@ -120,6 +120,23 @@ possible, sieve survival alone no longer identifies a prime pair. The forcing
 boundary marks the threshold where that ambiguity begins. The framework below
 shows how the first-survivor offset is defined relative to that boundary.
 
+**The criterion.** Write N = 2C and let q be the largest prime below √N, that
+is, the largest prime whose square is less than N. Sieve each pair
+(C − d, C + d) by the primes below q. The first-survivor offset λ_sieve(N) is
+the first offset whose pair survives, and the forcing boundary is
+W(N) = q² − C. Then
+
+> λ_sieve(N) < W(N)  ⟹  the first survivor is a pair of primes.
+
+If d < W(N), then C + d < q², so both endpoints lie below q². A composite below
+q² has a prime factor below q, so a surviving pair there is a pair of primes.
+Any closer pair of primes that are both at least q would also survive, so by
+minimality the first survivor is then the nearest Goldbach pair:
+λ_sieve(N) = λ_prime(N). A closer pair could escape the sieve only by using a
+prime below q, which is possible only when N < q² + q; the computation checks
+those N directly. The experiment asks where the first survivor falls relative
+to W(N).
+
 ![Framework: the first survivor and the forcing boundary](images/extras/first-survivor-framework.png)
 
 Panel A draws one small target, N = 272 (q = 13), on its offset line, with
@@ -154,10 +171,13 @@ a first survivor need not be prime.
 survival alone does not distinguish a prime from a composite whose prime factors
 are all at least q. Such a composite is at least q², so none can occur below q²:
 a sieve survivor with d < W is prime by size alone. So whenever
-λ_sieve(N) < W(N), the first survivor is a pair of primes. It is then also the
-nearest pair of primes: a pair of primes ≥ q survives the sieve automatically,
-so any closer pair would itself be a survivor at a smaller offset, contradicting
-the definition of the first survivor. Hence λ_sieve(N) = λ_prime(N).
+λ_sieve(N) < W(N), the first survivor is a pair of primes. A pair of primes that
+are both at least q survives automatically, so a closer pair of primes can be
+missed by the sieve only if one of its primes is below q. That prime is the
+lower endpoint C − d, so its offset exceeds C − q, and such an offset lies below
+W only when N < q² + q. For every other N, λ_sieve(N) < W(N) gives
+λ_sieve(N) = λ_prime(N); for those few N at the start of each block, the
+computation checks the equality directly, and it holds throughout the range.
 
 No composite survivor can occur at a valid offset d < W. When d = W itself lies
 in the valid offset range 0 ≤ d ≤ C − 2 (equivalently W ≥ 0 and N − q² ≥ 2), it

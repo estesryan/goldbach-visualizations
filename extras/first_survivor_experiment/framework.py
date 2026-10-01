@@ -243,8 +243,8 @@ def draw_blocks(fig, rect, b, q0):
     return ax
 
 
-INTRO = ("For N = 2C, the offset d represents the pair (C − d, C + d), sieved by the primes below q, the largest "
-         "prime with q² < N. The forcing boundary W = q² − C is where composite survivors first become possible.")
+INTRO = ("For N = 2C, offset d is the pair (C − d, C + d), sieved by the primes below q, the largest prime whose "
+         "square is less than N. The forcing boundary W = q² − C is where composite survivors first appear.")
 
 
 def build_framework_figure(fd):

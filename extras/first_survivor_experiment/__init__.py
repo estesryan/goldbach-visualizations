@@ -10,8 +10,10 @@ separate:
     W(N)         the forcing boundary q² - N/2
 
 A composite n < q² has a prime factor below q, so a survivor with d < W is a pair of
-primes, and is then also the nearest one: any closer pair of primes would survive
-too. The experiment measures where the first survivor lands relative to W.
+primes. Any closer pair of primes that are both at least q would survive too, so
+the first survivor is then also the nearest pair, except possibly for N < q² + q,
+where a closer pair could use a prime below q; the tests check those N directly.
+The experiment measures where the first survivor lands relative to W.
 
     data.py      computation, fitting and the exact blocks (no plotting)
     layout.py    figure sizes and panel geometry, landscape and portrait separately
