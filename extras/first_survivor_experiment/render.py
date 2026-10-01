@@ -163,6 +163,18 @@ def draw_example(fig, rect, e, geo, portrait):
 
 # ---- panel B: forcing boundary against first survivor
 
+def draw_w(ax, N, q, W, lw, zorder, rasterized=False, dots=(1, 2.5)):
+    """W(N) as one straight segment per prime-square block. The reset at each q² is a
+    jump, drawn faint and dotted beneath the segments, not part of W. Short resets
+    need denser dots to show at all."""
+    cuts = np.flatnonzero(np.diff(q)) + 1
+    for n, w in zip(np.split(N, cuts), np.split(W, cuts)):
+        ax.plot(n, w, color=col("boundary"), lw=lw, zorder=zorder, rasterized=rasterized, gid="boundary")
+    gap = np.full(len(cuts), np.nan)
+    ax.plot(np.column_stack([N[cuts - 1], N[cuts], gap]).ravel(), np.column_stack([W[cuts - 1], W[cuts], gap]).ravel(),
+            color=col("MUTED"), lw=0.7, ls=(0, dots), zorder=zorder - 0.5, rasterized=rasterized)
+
+
 def draw_small(fig, rect, d, r, small_max):
     """Linear view of the complete prime-square blocks up to small_max."""
     ax = inset(fig, rect, r)
@@ -171,7 +183,7 @@ def draw_small(fig, rect, d, r, small_max):
     s = sw.N <= small_max
     N, q, W, lam = sw.N[s], sw.q[s], sw.W[s], sw.lam_sieve[s]
     ax.set_xlim(0, small_max + 4)
-    ax.set_ylim(-16, 100)
+    ax.set_ylim(-22, 100)
     x0, x1 = ax.get_xlim()
     width_in = r[2] / (x1 - x0)
     ax.axhline(0, color=col("BORDER"), lw=0.8, zorder=1)
@@ -179,11 +191,11 @@ def draw_small(fig, rect, d, r, small_max):
         b = q == qq
         if i % 2:
             ax.axvspan(N[b][0] - 1, N[b][-1] + 1, color=col("GRID"), lw=0, zorder=0)
-        ax.plot(N[b], W[b], color=col("boundary"), lw=1.6, zorder=2, gid="boundary")
         mid, wid = (N[b][0] + N[b][-1]) / 2, (N[b][-1] - N[b][0] + 2) * width_in
         if wid > 0.12:
             ax.text(mid, 97, f"q = {qq}" if wid > 0.42 else str(qq), fontsize=FS["tick"], color=col("MUTED"),
                     ha="center", va="top")
+    draw_w(ax, N, q, W, lw=1.6, zorder=6)       # above the points, so the early blocks' W stays visible
     comp = np.isin(N, d.composite_first)
     out = np.isin(N, d.prime_outside)
     ok = ~(comp | out)
@@ -191,13 +203,15 @@ def draw_small(fig, rect, d, r, small_max):
     ax.scatter(N[comp], lam[comp], s=30, color=col("exception"), lw=0, zorder=5, gid="exception")
     ax.scatter(N[out], lam[out], s=30, facecolors="none", edgecolors=col("exception"), lw=1.2, zorder=5,
                gid="exception")
+    # Callouts: N = 100 from the open space above, its leader vertical so it crosses
+    # no W segment; N = 272 below the λ = 0 row, clear of it.
     i = int(np.searchsorted(N, 100))
-    ax.annotate(f"N = 100: λ = {lam[i]} ≥ W = {W[i]}".replace("-", "−"), xy=(100, lam[i]),
-                xytext=(14, 50), fontsize=FS["small"], color=col("TEXT"), va="center",
+    ax.annotate(f"N = 100: {LS} = {lam[i]} ≥ W = {W[i]}".replace("-", "−"), xy=(100, lam[i]),
+                xytext=(100, 72), ha="center", fontsize=FS["small"], color=col("TEXT"), va="center",
                 arrowprops=dict(arrowstyle="-", color=col("MUTED"), lw=0.8, shrinkA=2, shrinkB=4))
     k = int(np.searchsorted(N, d.max_ratio_N))
-    ax.annotate(f"N = {d.max_ratio_N}: λ = {lam[k]} < W = {W[k]}", xy=(d.max_ratio_N, lam[k]),
-                xytext=(small_max + 2, -9), ha="right", fontsize=FS["small"], color=col("TEXT"), va="center",
+    ax.annotate(f"N = {d.max_ratio_N}: {LS} = {lam[k]} < W = {W[k]}", xy=(d.max_ratio_N, lam[k]),
+                xytext=(small_max + 2, -14), ha="right", fontsize=FS["small"], color=col("TEXT"), va="center",
                 arrowprops=dict(arrowstyle="-", color=col("MUTED"), lw=0.8, shrinkA=2, shrinkB=4))
     ax.set_yticks([0, 20, 40, 60, 80])
     ax.set_xlabel("even N", labelpad=2)
@@ -224,7 +238,7 @@ def draw_large(fig, rect, d, r, rc):
                          norm=LogNorm(vmin=1e-4, vmax=1), zorder=1)
     sw = d.sweep
     s = sw.N >= d.min_N
-    ax.plot(sw.N[s], sw.W[s], color=col("boundary"), lw=0.9, zorder=3, rasterized=True, gid="boundary")
+    draw_w(ax, sw.N[s], sw.q[s], sw.W[s], lw=0.9, zorder=3, rasterized=True, dots=(1, 1))
     ax.set_xscale("log"); ax.set_yscale("symlog", linthresh=10, linscale=0.7)
     ax.set_xlim(h.x_edges[0], h.x_edges[-1])
     ax.set_ylim(-0.5, 2e6)
@@ -240,8 +254,9 @@ def draw_large(fig, rect, d, r, rc):
             color=col("TEXT"), va="top")
     ax.text(0.03, 0.86, f"shaded: {LS}(N)", transform=ax.transAxes,
             fontsize=FS["tick"], color=col("surviving"), va="top", gid="surviving")
-    ax.text(0.97, 0.66, "W(N)", transform=ax.transAxes, fontsize=FS["small"], color=col("boundary"),
-            ha="right", va="center", gid="boundary")
+    j = int(np.searchsorted(sw.N, 2e5))         # the label sits just below the line
+    ax.text(sw.N[j], sw.W[j] / 2.2, "W(N)", fontsize=FS["small"], color=col("boundary"),
+            ha="left", va="top", gid="boundary")
     cax = inset(fig, rect, rc, spines=())
     cb = fig.colorbar(mesh, cax=cax)
     cb.outline.set_edgecolor(col("BORDER"))
@@ -256,7 +271,7 @@ def draw_boundary(fig, rect, d, geo, small_max, portrait):
     small.legend(handles=handles, loc="lower left", bbox_to_anchor=(-0.01, 1.0), frameon=False,
                  fontsize=FS["tick"], handlelength=1.4, borderaxespad=0.1, labelspacing=0.3, handletextpad=0.5,
                  columnspacing=1.2, ncol=4 if portrait else 2)
-    label_above(small, f"Even N ≤ {small_max}: W falls linearly in each block; {LS} moves in jumps",
+    label_above(small, f"Even N ≤ {small_max}: W is linear in each block; {LS} jumps",
                 pad_in=0.48 if not portrait else 0.3)
     large = draw_large(fig, rect, d, geo["large"], geo["colorbar"])
     label_above(large, f"Every even N with {d.min_N} ≤ N < {pow2(d.n_max.bit_length() - 1)}")
@@ -386,8 +401,8 @@ def build_figure(name, d, small_max=288):
                   f"{keep(f'{e.C - e.lam_prime:,} + {e.C + e.lam_prime:,}')}."))
     axes.update(draw_example(fig, cs["example"], e, geo["example"], portrait))
     card(fig, cs["boundary"], "From one target to every N", subtitle(
-        portrait, f"In each prime-square block {keep('q² < N < r²')}, {keep('W = q² − N/2')} falls linearly. "
-                  "A first survivor that lands below W is forced to be prime."))
+        portrait, f"In each prime-square block {keep('q² < N < r²')}, r the next prime, {keep('W = q² − N/2')} "
+                  "falls linearly. A first survivor below W is forced to be a pair of primes."))
     axes.update(draw_boundary(fig, cs["boundary"], d, geo["boundary"], small_max, portrait))
     card(fig, cs["envelope"], "A finite-range empirical envelope", subtitle(
         portrait, "The largest first-survivor offset in each dyadic bin of N, fitted over three nested "
